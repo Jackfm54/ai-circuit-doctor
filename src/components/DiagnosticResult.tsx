@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { AlertTriangle, CheckCircle, XCircle, Cpu, Zap, ThermometerSun, CircuitBoard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ImageAnalysisOverlay, BoundingBox } from "./ImageAnalysisOverlay";
 
 export interface ComponentStatus {
   name: string;
   status: "ok" | "warning" | "error";
   details: string;
   location?: string;
+  boundingBox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  confidence?: number;
 }
 
 export interface DiagnosticData {
@@ -19,6 +28,7 @@ export interface DiagnosticData {
 
 interface DiagnosticResultProps {
   data: DiagnosticData;
+  imageUrl?: string;
 }
 
 const statusConfig = {
@@ -60,15 +70,60 @@ function getComponentIcon(name: string) {
   return componentIcons.default;
 }
 
-export function DiagnosticResult({ data }: DiagnosticResultProps) {
+export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
+  const [selectedComponentIndex, setSelectedComponentIndex] = useState<number | undefined>();
+  
   const overallConfig = statusConfig[data.overallStatus];
   const OverallIcon = overallConfig.icon;
 
   const faultyComponents = data.components.filter(c => c.status === "error");
   const warningComponents = data.components.filter(c => c.status === "warning");
 
+  // Convert components with bounding boxes to overlay format
+  const boundingBoxes: BoundingBox[] = data.components
+    .filter(c => c.boundingBox)
+    .map(c => ({
+      x: c.boundingBox!.x,
+      y: c.boundingBox!.y,
+      width: c.boundingBox!.width,
+      height: c.boundingBox!.height,
+      label: c.name,
+      status: c.status,
+      confidence: c.confidence,
+    }));
+
+  const handleBoxClick = (box: BoundingBox, index: number) => {
+    setSelectedComponentIndex(index);
+    // Scroll to component in list
+    const element = document.getElementById(`component-${index}`);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6">
+      {/* Image with bounding boxes */}
+      {imageUrl && boundingBoxes.length > 0 && (
+        <Card className="border-primary/20 overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <CircuitBoard className="w-5 h-5 text-primary" />
+              Análisis Visual - Detección de Componentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ImageAnalysisOverlay
+              imageUrl={imageUrl}
+              boundingBoxes={boundingBoxes}
+              onBoxClick={handleBoxClick}
+              selectedIndex={selectedComponentIndex}
+            />
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Haz clic en los recuadros para ver detalles del componente
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overall Status Card */}
       <Card className={cn("border-2 glow-border", overallConfig.border)}>
         <CardHeader className="pb-3">
@@ -125,15 +180,20 @@ export function DiagnosticResult({ data }: DiagnosticResultProps) {
               const config = statusConfig[component.status];
               const StatusIcon = config.icon;
               const ComponentIcon = getComponentIcon(component.name);
+              const isSelected = selectedComponentIndex === idx;
               
               return (
                 <div
                   key={idx}
+                  id={`component-${idx}`}
                   className={cn(
-                    "flex items-start gap-4 p-4 rounded-lg border transition-all hover:scale-[1.01]",
+                    "flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer",
                     config.bg,
-                    config.border
+                    config.border,
+                    isSelected && "ring-2 ring-primary scale-[1.02]",
+                    !isSelected && "hover:scale-[1.01]"
                   )}
+                  onClick={() => setSelectedComponentIndex(isSelected ? undefined : idx)}
                 >
                   <div className={cn("p-2 rounded-lg", config.bg)}>
                     <ComponentIcon className={cn("w-5 h-5", config.color)} />
@@ -145,6 +205,11 @@ export function DiagnosticResult({ data }: DiagnosticResultProps) {
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                           {component.location}
                         </span>
+                      )}
+                      {component.confidence && (
+                        <Badge variant="outline" className="text-xs">
+                          {Math.round(component.confidence * 100)}% conf.
+                        </Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{component.details}</p>

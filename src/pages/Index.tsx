@@ -14,11 +14,13 @@ export default function Index() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticData | null>(null);
   const [hardwareMeasurements, setHardwareMeasurements] = useState<MeasurementData[]>([]);
+  const [analyzedImageUrl, setAnalyzedImageUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleImageAnalysis = async (file: File, preview: string) => {
     setIsAnalyzing(true);
     setDiagnosticResult(null);
+    setAnalyzedImageUrl(preview);
 
     try {
       const base64Image = preview.split(",")[1];
@@ -127,6 +129,7 @@ export default function Index() {
   const handleReset = () => {
     setDiagnosticResult(null);
     setHardwareMeasurements([]);
+    setAnalyzedImageUrl(null);
   };
 
   return (
@@ -263,7 +266,7 @@ export default function Index() {
                 Nuevo análisis
               </Button>
             </div>
-            <DiagnosticResult data={diagnosticResult} />
+            <DiagnosticResult data={diagnosticResult} imageUrl={analyzedImageUrl || undefined} />
           </div>
         )}
       </main>

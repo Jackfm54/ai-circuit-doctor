@@ -87,16 +87,56 @@ serve(async (req) => {
     if (hasImage && hasMeasurements) {
       analysisType = "análisis combinado de imagen y datos de hardware";
     } else if (hasImage) {
-      analysisType = "análisis visual de imagen";
+      analysisType = "análisis visual de imagen con detección de componentes";
     } else {
       analysisType = "análisis de datos de hardware";
     }
 
-    const systemPrompt = `Eres un experto ingeniero electrónico especializado en diagnóstico de tarjetas de circuitos impresos (PCB). 
+    const systemPrompt = `Eres un experto ingeniero electrónico especializado en diagnóstico de tarjetas de circuitos impresos (PCB) con capacidades de detección visual estilo YOLO.
 Vas a realizar un ${analysisType}.
 
+${hasImage ? `DETECCIÓN VISUAL DE COMPONENTES (ESTILO YOLO):
+Tu tarea principal es identificar y localizar CADA componente visible en la imagen con coordenadas precisas de bounding box.
+
+Para CADA componente que detectes, debes proporcionar:
+1. Nombre del componente (ej: "Capacitor C1", "Chip U3", "Resistor R5")
+2. Bounding box con coordenadas normalizadas (valores entre 0 y 1):
+   - x: posición horizontal del borde izquierdo del recuadro (0 = izquierda, 1 = derecha)
+   - y: posición vertical del borde superior del recuadro (0 = arriba, 1 = abajo)
+   - width: ancho del recuadro (proporción del ancho total)
+   - height: alto del recuadro (proporción del alto total)
+3. Estado del componente (ok, warning, error)
+4. Confianza de la detección (0.0 a 1.0)
+5. Descripción detallada del estado
+
+IMPORTANTE para bounding boxes:
+- Sé lo más preciso posible con las coordenadas
+- Los valores deben estar entre 0 y 1
+- x=0 es el borde izquierdo, x=1 es el borde derecho
+- y=0 es el borde superior, y=1 es el borde inferior
+- El recuadro debe envolver completamente el componente
+
+Busca y marca:
+- Capacitores (electrolíticos, cerámicos, tantalio)
+- Resistencias (SMD, through-hole)
+- Chips/ICs (microcontroladores, reguladores, drivers)
+- Conectores
+- Transformadores
+- Bobinas/inductores
+- Diodos y LEDs
+- Transistores
+- Fusibles
+- Cristales de cuarzo
+
+Identifica daños como:
+- Capacitores inflados o con fugas
+- Componentes quemados o ennegrecidos
+- Soldaduras frías o agrietadas
+- Componentes faltantes
+- Corrosión
+- Trazas dañadas` : ''}
+
 ${hasMeasurements ? `Se te proporcionan datos de mediciones reales tomadas de la tarjeta con un microcontrolador (Arduino/ESP32).
-Estos datos incluyen mediciones de voltaje, continuidad y/o resistencia de diferentes puntos de la PCB.
 
 INTERPRETACIÓN DE DATOS:
 - Voltajes: Los valores normales típicos son 3.3V, 5V, 12V según el circuito. Valores cercanos a 0V o fuera de rango indican problemas.
@@ -105,27 +145,28 @@ INTERPRETACIÓN DE DATOS:
 - Status "error": Indica un valor fuera de los umbrales normales.
 - Status "warning": Indica un valor en límite que requiere atención.` : ''}
 
-${hasImage ? `También analiza la imagen proporcionada buscando:
-1. Componentes visibles (capacitores, resistencias, chips, conectores, etc.)
-2. Posibles daños visuales (quemaduras, corrosión, soldaduras frías, componentes inflados, etc.)
-3. Signos de sobrecalentamiento
-4. Componentes faltantes o desoldados` : ''}
-
 IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional.
 
 El JSON debe tener exactamente esta estructura:
 {
-  "summary": "Resumen general del estado de la tarjeta en 1-2 oraciones, mencionando si el diagnóstico es visual, por hardware o combinado",
+  "summary": "Resumen general del estado de la tarjeta, mencionando cantidad de componentes detectados y estado general",
   "overallStatus": "ok" | "warning" | "error",
   "components": [
     {
-      "name": "Nombre del componente o punto de medición (ej: Capacitor C1, Canal V3, Test Point TP2)",
+      "name": "Nombre del componente (ej: Capacitor C1)",
       "status": "ok" | "warning" | "error",
-      "details": "Descripción detallada del estado incluyendo valores medidos si aplica",
-      "location": "Ubicación o canal de medición"
+      "details": "Descripción detallada del estado del componente",
+      "location": "Ubicación descriptiva (ej: esquina superior izquierda)",
+      "boundingBox": {
+        "x": 0.1,
+        "y": 0.2,
+        "width": 0.05,
+        "height": 0.08
+      },
+      "confidence": 0.95
     }
   ],
-  "recommendations": ["Lista de recomendaciones para reparación o mantenimiento, priorizando los problemas más críticos"]
+  "recommendations": ["Lista de recomendaciones priorizadas para reparación"]
 }
 
 ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
@@ -142,16 +183,16 @@ ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
     }
 
     let userText = hasImage 
-      ? "Analiza esta tarjeta electrónica y proporciona un diagnóstico detallado."
+      ? "Detecta y localiza TODOS los componentes electrónicos visibles en esta imagen. Para cada componente, proporciona coordenadas precisas de bounding box normalizadas (0-1) y evalúa su estado."
       : "Analiza los datos de mediciones del hardware y proporciona un diagnóstico detallado.";
     
     if (hasImage && hasMeasurements) {
-      userText = "Analiza la imagen de la tarjeta junto con los datos de mediciones del hardware para proporcionar un diagnóstico completo y preciso.";
+      userText = "Detecta y localiza TODOS los componentes electrónicos visibles. Combina el análisis visual con los datos de mediciones del hardware para un diagnóstico completo. Proporciona bounding boxes precisos para cada componente.";
     }
 
     userContent.push({
       type: "text",
-      text: userText + " Responde solo con JSON.",
+      text: userText + " Responde solo con JSON válido.",
     });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -210,6 +251,21 @@ ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
         jsonString = jsonString.slice(0, -3);
       }
       diagnosticData = JSON.parse(jsonString.trim());
+      
+      // Validate bounding boxes are within range
+      if (diagnosticData.components) {
+        diagnosticData.components = diagnosticData.components.map((c: any) => {
+          if (c.boundingBox) {
+            c.boundingBox = {
+              x: Math.max(0, Math.min(1, c.boundingBox.x || 0)),
+              y: Math.max(0, Math.min(1, c.boundingBox.y || 0)),
+              width: Math.max(0.01, Math.min(1 - (c.boundingBox.x || 0), c.boundingBox.width || 0.05)),
+              height: Math.max(0.01, Math.min(1 - (c.boundingBox.y || 0), c.boundingBox.height || 0.05)),
+            };
+          }
+          return c;
+        });
+      }
     } catch (parseError) {
       console.error("Error parsing AI response:", content);
       diagnosticData = {
