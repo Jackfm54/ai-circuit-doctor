@@ -92,49 +92,112 @@ serve(async (req) => {
       analysisType = "análisis de datos de hardware";
     }
 
-    const systemPrompt = `Eres un experto ingeniero electrónico especializado en diagnóstico de tarjetas de circuitos impresos (PCB) con capacidades de detección visual estilo YOLO.
+const systemPrompt = `Eres un SISTEMA EXPERTO DE VISIÓN POR COMPUTADORA especializado en detección de objetos en tarjetas de circuitos impresos (PCB), con precisión nivel industrial.
+
+MODO DE OPERACIÓN: Detección de objetos estilo YOLO/Faster R-CNN con coordenadas de bounding box normalizadas.
+
 Vas a realizar un ${analysisType}.
 
-${hasImage ? `DETECCIÓN VISUAL DE COMPONENTES (ESTILO YOLO):
-Tu tarea principal es identificar y localizar CADA componente visible en la imagen con coordenadas precisas de bounding box.
+${hasImage ? `=== PROTOCOLO DE DETECCIÓN DE ALTA PRECISIÓN ===
 
-Para CADA componente que detectes, debes proporcionar:
-1. Nombre del componente (ej: "Capacitor C1", "Chip U3", "Resistor R5")
-2. Bounding box con coordenadas normalizadas (valores entre 0 y 1):
-   - x: posición horizontal del borde izquierdo del recuadro (0 = izquierda, 1 = derecha)
-   - y: posición vertical del borde superior del recuadro (0 = arriba, 1 = abajo)
-   - width: ancho del recuadro (proporción del ancho total)
-   - height: alto del recuadro (proporción del alto total)
-3. Estado del componente (ok, warning, error)
-4. Confianza de la detección (0.0 a 1.0)
-5. Descripción detallada del estado
+PASO 1 - ANÁLISIS GLOBAL:
+Primero, analiza la imagen completa para entender:
+- La orientación de la PCB (horizontal/vertical)
+- El tamaño relativo de los componentes
+- Las zonas de mayor densidad de componentes
+- El sistema de coordenadas: esquina superior izquierda = (0,0), esquina inferior derecha = (1,1)
 
-IMPORTANTE para bounding boxes:
-- Sé lo más preciso posible con las coordenadas
-- Los valores deben estar entre 0 y 1
-- x=0 es el borde izquierdo, x=1 es el borde derecho
-- y=0 es el borde superior, y=1 es el borde inferior
-- El recuadro debe envolver completamente el componente
+PASO 2 - GRILLA DE REFERENCIA:
+Imagina la imagen dividida en una grilla 10x10:
+- Columna 0: x = 0.0 a 0.1 (extremo izquierdo)
+- Columna 5: x = 0.5 a 0.6 (centro)
+- Columna 9: x = 0.9 a 1.0 (extremo derecho)
+- Fila 0: y = 0.0 a 0.1 (extremo superior)
+- Fila 5: y = 0.5 a 0.6 (centro)
+- Fila 9: y = 0.9 a 1.0 (extremo inferior)
 
-Busca y marca:
-- Capacitores (electrolíticos, cerámicos, tantalio)
-- Resistencias (SMD, through-hole)
-- Chips/ICs (microcontroladores, reguladores, drivers)
-- Conectores
-- Transformadores
-- Bobinas/inductores
-- Diodos y LEDs
-- Transistores
-- Fusibles
-- Cristales de cuarzo
+PASO 3 - DETECCIÓN SISTEMÁTICA:
+Escanea la imagen en orden serpentina:
+1. Fila superior: izquierda → derecha
+2. Segunda fila: derecha → izquierda
+3. Continúa alternando hasta cubrir toda la imagen
 
-Identifica daños como:
-- Capacitores inflados o con fugas
-- Componentes quemados o ennegrecidos
-- Soldaduras frías o agrietadas
-- Componentes faltantes
-- Corrosión
-- Trazas dañadas` : ''}
+PASO 4 - PARA CADA COMPONENTE DETECTADO:
+a) Identifica el CENTRO EXACTO del componente en coordenadas normalizadas
+b) Estima el TAMAÑO del componente (width, height) en proporción a la imagen
+c) Calcula las coordenadas del bounding box:
+   - x = centro_x - (width / 2)
+   - y = centro_y - (height / 2)
+d) Verifica que el recuadro envuelve completamente el componente
+
+=== REGLAS DE BOUNDING BOX (CRÍTICO) ===
+
+1. PRECISIÓN DE COORDENADAS:
+   - Usa exactamente 3 decimales (ej: 0.123, no 0.1)
+   - x y y son las coordenadas de la ESQUINA SUPERIOR IZQUIERDA del recuadro
+   - width y height son las DIMENSIONES del recuadro
+
+2. TAMAÑOS TÍPICOS DE COMPONENTES (referencia):
+   - Chip/IC grande: width=0.15-0.25, height=0.08-0.15
+   - Chip/IC pequeño: width=0.05-0.10, height=0.03-0.06
+   - Capacitor electrolítico: width=0.03-0.06, height=0.04-0.08
+   - Capacitor SMD: width=0.02-0.04, height=0.01-0.03
+   - Resistor SMD: width=0.02-0.04, height=0.01-0.02
+   - Conector grande: width=0.10-0.20, height=0.05-0.15
+   - Cristal: width=0.03-0.06, height=0.02-0.04
+   - Transistor: width=0.02-0.04, height=0.02-0.04
+
+3. VALIDACIONES OBLIGATORIAS:
+   - 0 ≤ x < 1 y 0 ≤ y < 1
+   - 0.005 ≤ width ≤ 0.5 y 0.005 ≤ height ≤ 0.5
+   - x + width ≤ 1.0 y y + height ≤ 1.0
+   - El recuadro debe ser AJUSTADO al componente (no demasiado grande ni pequeño)
+
+4. MARGEN DE SEGURIDAD:
+   - Añade 10-15% de margen alrededor del componente visible
+   - Nunca dejes partes del componente fuera del recuadro
+
+=== COMPONENTES A DETECTAR ===
+
+OBLIGATORIOS (detecta TODOS los visibles):
+☐ Capacitores electrolíticos (cilíndricos, a menudo con marca de polaridad)
+☐ Capacitores cerámicos/SMD (pequeños, rectangulares)
+☐ Resistencias SMD (pequeñas, con código numérico)
+☐ Resistencias through-hole (cilíndricas con bandas de colores)
+☐ Circuitos integrados/Chips (rectangulares, múltiples pines)
+☐ Microcontroladores (chips grandes con muchos pines)
+☐ Reguladores de voltaje (chips con disipador o 3 pines)
+☐ Conectores (USB, HDMI, de alimentación, headers)
+☐ Transformadores (componentes grandes, bobinados)
+☐ Bobinas/Inductores (a veces con núcleo visible)
+☐ Diodos (pequeños, a menudo negros con banda)
+☐ LEDs (transparentes o de colores)
+☐ Transistores (3 pines, varios encapsulados)
+☐ Fusibles (cilíndricos o SMD)
+☐ Cristales/Osciladores (metálicos, ovalados o rectangulares)
+☐ MOSFETs/IGBTs (encapsulados grandes con disipador)
+
+=== DIAGNÓSTICO DE FALLAS ===
+
+INDICADORES DE ERROR (status: "error"):
+🔴 Capacitor inflado (tapa abultada o curvada)
+🔴 Componente quemado (ennegrecido, carbonizado)
+🔴 Fuga de electrolito (manchas marrones/naranjas)
+🔴 Soldadura fundida o derretida
+🔴 Componente visiblemente roto o agrietado
+🔴 Trazas cortadas o levantadas
+
+INDICADORES DE ADVERTENCIA (status: "warning"):
+🟡 Decoloración leve (amarillento)
+🟡 Soldadura opaca o granulosa (posible soldadura fría)
+🟡 Corrosión leve visible
+🟡 Componente ligeramente desalineado
+🟡 Suciedad o residuos significativos
+
+INDICADORES OK (status: "ok"):
+🟢 Soldaduras brillantes y bien formadas
+🟢 Componente limpio y alineado
+🟢 Sin signos de daño o desgaste` : ''}
 
 ${hasMeasurements ? `Se te proporcionan datos de mediciones reales tomadas de la tarjeta con un microcontrolador (Arduino/ESP32).
 
@@ -145,28 +208,31 @@ INTERPRETACIÓN DE DATOS:
 - Status "error": Indica un valor fuera de los umbrales normales.
 - Status "warning": Indica un valor en límite que requiere atención.` : ''}
 
-IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional.
+IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional antes o después.
 
 El JSON debe tener exactamente esta estructura:
 {
-  "summary": "Resumen general del estado de la tarjeta, mencionando cantidad de componentes detectados y estado general",
+  "summary": "Resumen ejecutivo: X componentes detectados, Y con fallas, Z con advertencias",
   "overallStatus": "ok" | "warning" | "error",
+  "detectionMethod": "Descripción breve del método de escaneo utilizado",
   "components": [
     {
-      "name": "Nombre del componente (ej: Capacitor C1)",
+      "name": "Nombre del componente (ej: Capacitor Electrolítico C1)",
+      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|other",
       "status": "ok" | "warning" | "error",
-      "details": "Descripción detallada del estado del componente",
-      "location": "Ubicación descriptiva (ej: esquina superior izquierda)",
+      "details": "Descripción detallada y específica del estado observado",
+      "location": "Descripción textual de ubicación (ej: cuadrante superior-izquierdo, junto al conector USB)",
       "boundingBox": {
-        "x": 0.1,
-        "y": 0.2,
-        "width": 0.05,
-        "height": 0.08
+        "x": 0.123,
+        "y": 0.456,
+        "width": 0.078,
+        "height": 0.045
       },
       "confidence": 0.95
     }
   ],
-  "recommendations": ["Lista de recomendaciones priorizadas para reparación"]
+  "recommendations": ["Lista priorizada de acciones de reparación específicas"],
+  "analysisQuality": "high|medium|low"
 }
 
 ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
@@ -183,17 +249,43 @@ ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
     }
 
     let userText = hasImage 
-      ? "Detecta y localiza TODOS los componentes electrónicos visibles en esta imagen. Para cada componente, proporciona coordenadas precisas de bounding box normalizadas (0-1) y evalúa su estado."
-      : "Analiza los datos de mediciones del hardware y proporciona un diagnóstico detallado.";
+      ? `INSTRUCCIÓN DE DETECCIÓN:
+
+1. Primero, describe brevemente qué ves en la imagen (tipo de PCB, orientación, densidad de componentes).
+
+2. Luego, escanea sistemáticamente TODA la imagen usando el método de grilla 10x10.
+
+3. Para CADA componente visible:
+   - Determina su centro exacto en la imagen
+   - Calcula el bounding box preciso con 3 decimales
+   - Evalúa su estado visual
+   - Asigna un nivel de confianza realista
+
+4. Verifica tus coordenadas: un componente en la esquina superior izquierda debe tener x≈0.0-0.2, y≈0.0-0.2
+
+5. Responde SOLO con el JSON estructurado. Sin explicaciones adicionales.`
+      : "Analiza los datos de mediciones del hardware y proporciona un diagnóstico detallado en formato JSON.";
     
     if (hasImage && hasMeasurements) {
-      userText = "Detecta y localiza TODOS los componentes electrónicos visibles. Combina el análisis visual con los datos de mediciones del hardware para un diagnóstico completo. Proporciona bounding boxes precisos para cada componente.";
+      userText = `INSTRUCCIÓN DE ANÁLISIS COMBINADO:
+
+1. Escanea la imagen sistemáticamente para detectar TODOS los componentes con bounding boxes precisos.
+
+2. Correlaciona los datos de mediciones de hardware con los componentes detectados visualmente.
+
+3. Para componentes con mediciones anómalas, aumenta la severidad del diagnóstico.
+
+4. Proporciona coordenadas de bounding box con 3 decimales de precisión.
+
+5. Responde SOLO con el JSON estructurado.`;
     }
 
     userContent.push({
       type: "text",
-      text: userText + " Responde solo con JSON válido.",
+      text: userText,
     });
+
+    console.log("Sending request to AI gateway with enhanced detection prompt...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -210,6 +302,7 @@ ${hasMeasurements ? `DATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}`;
             content: userContent,
           },
         ],
+        temperature: 0.1, // Lower temperature for more consistent/precise outputs
       }),
     });
 
