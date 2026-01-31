@@ -7,7 +7,8 @@ import { HardwareGuide } from "@/components/HardwareGuide";
 import { MeasurementData } from "@/hooks/useSerialConnection";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen } from "lucide-react";
+import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircle } from "lucide-react";
+import { ExpertChat } from "@/components/ExpertChat";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Index() {
@@ -186,18 +187,22 @@ export default function Index() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="hardware" className="max-w-4xl mx-auto">
-              <TabsList className="grid grid-cols-3 w-full bg-card/50 border border-border/50">
+              <TabsList className="grid grid-cols-4 w-full bg-card/50 border border-border/50">
                 <TabsTrigger value="hardware" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Usb className="w-4 h-4 mr-2" />
-                  Conexión Hardware
+                  Hardware
                 </TabsTrigger>
                 <TabsTrigger value="image" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Camera className="w-4 h-4 mr-2" />
-                  Análisis de Imagen
+                  Imagen
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Experto IA
                 </TabsTrigger>
                 <TabsTrigger value="guide" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Guía Hardware
+                  Guía
                 </TabsTrigger>
               </TabsList>
 
@@ -250,6 +255,10 @@ export default function Index() {
                   )}
                   <ImageUploader onImageSelect={handleImageAnalysis} isAnalyzing={isAnalyzing} />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="chat" className="mt-6">
+                <ExpertChat />
               </TabsContent>
 
               <TabsContent value="guide" className="mt-6">
