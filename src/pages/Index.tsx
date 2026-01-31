@@ -276,6 +276,14 @@ export default function Index() {
               </Button>
             </div>
             <DiagnosticResult data={diagnosticResult} imageUrl={analyzedImageUrl || undefined} />
+            
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" />
+                Consulta al Experto
+              </h3>
+              <ExpertChat />
+            </div>
           </div>
         )}
       </main>
