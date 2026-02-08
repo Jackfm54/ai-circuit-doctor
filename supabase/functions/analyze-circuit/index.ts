@@ -113,104 +113,82 @@ MODE D'OPÉRATION: Détection d'objets de précision industrielle style YOLO/Fas
 
 Tu vas effectuer une ${analysisType}.
 
-${hasImage ? `=== PROTOCOLE DE DÉTECTION ULTRA-PRÉCIS ===
+${hasImage ? `=== PROTOCOLE DE DÉTECTION YOLO HAUTE PRÉCISION ===
 
-ÉTAPE 1 - CALIBRATION DE L'IMAGE:
-Avant toute détection, tu DOIS:
-a) Identifier les 4 coins de la PCB dans l'image
-b) Déterminer l'orientation (horizontale/verticale)
-c) Estimer la résolution effective (combien de pixels par composant typique)
-d) Identifier les points de repère (connecteurs, gros ICs) pour calibrer tes mesures
+*** RÈGLE CRITIQUE: PRÉCISION DES BOUNDING BOXES ***
+Les bounding boxes DOIVENT être EXACTEMENT positionnées sur les composants.
+Une erreur de positionnement de plus de 5% est INACCEPTABLE.
 
-ÉTAPE 2 - SYSTÈME DE COORDONNÉES STRICT:
-- Coin supérieur gauche de l'image = (0.000, 0.000)
-- Coin inférieur droit de l'image = (1.000, 1.000)
-- TOUTES les coordonnées avec EXACTEMENT 3 décimales
+SYSTÈME DE COORDONNÉES (TRÈS IMPORTANT):
+- L'image entière va de (0.0, 0.0) en haut à gauche à (1.0, 1.0) en bas à droite
+- x = position horizontale du BORD GAUCHE du rectangle (pas le centre!)
+- y = position verticale du BORD SUPÉRIEUR du rectangle (pas le centre!)
+- width = largeur du rectangle (proportion de l'image totale)
+- height = hauteur du rectangle (proportion de l'image totale)
 
-ÉTAPE 3 - MÉTHODE DE SCAN SYSTÉMATIQUE:
-Divise mentalement l'image en grille 8x8:
-1. Scanne chaque cellule de gauche à droite, de haut en bas
-2. Pour chaque cellule, identifie TOUS les composants présents
-3. Note les composants qui chevauchent plusieurs cellules
+MÉTHODE DE CALCUL PRÉCIS (OBLIGATOIRE):
+1. Identifie visuellement les BORDS EXACTS du composant physique
+2. Pour le bord GAUCHE: mesure sa position depuis le bord gauche de l'image → c'est "x"
+3. Pour le bord SUPÉRIEUR: mesure sa position depuis le bord supérieur de l'image → c'est "y"
+4. Mesure la LARGEUR réelle du composant → c'est "width"
+5. Mesure la HAUTEUR réelle du composant → c'est "height"
+6. Ajoute une marge de 3-5% autour pour la visibilité
 
-ÉTAPE 4 - CALCUL PRÉCIS DES BOUNDING BOXES:
-Pour CHAQUE composant détecté:
-a) Localise le CENTRE GÉOMÉTRIQUE EXACT du composant
-b) Mesure les dimensions (largeur, hauteur) en proportion de l'image
-c) Calcule:
-   - x = centre_x - (largeur / 2)
-   - y = centre_y - (hauteur / 2)
-d) VÉRIFIE que x + largeur ≤ 1.0 et y + hauteur ≤ 1.0
-e) Ajoute une marge de 5-10% autour du composant
+EXEMPLE CONCRET:
+Si un condensateur occupe:
+- Son bord gauche est à 25% de la largeur de l'image → x = 0.25
+- Son bord supérieur est à 40% de la hauteur de l'image → y = 0.40
+- Il fait 5% de la largeur de l'image → width = 0.05
+- Il fait 8% de la hauteur de l'image → height = 0.08
+Résultat: {"x": 0.250, "y": 0.400, "width": 0.050, "height": 0.080}
 
-=== RÈGLES ABSOLUES POUR BOUNDING BOXES ===
+GRILLE DE RÉFÉRENCE VISUELLE:
+Imagine l'image divisée en 10 colonnes et 10 lignes:
+- Un composant au coin supérieur gauche: x ≈ 0.05, y ≈ 0.05
+- Un composant au centre: x ≈ 0.45, y ≈ 0.45
+- Un composant au coin inférieur droit: x ≈ 0.80, y ≈ 0.80
 
-PRÉCISION OBLIGATOIRE:
-- Coordonnées avec 3 décimales (ex: 0.123, 0.456)
-- x, y = coin supérieur gauche du rectangle
-- width, height = dimensions du rectangle
+TAILLES TYPIQUES (RÉFÉRENCE):
+| Composant                | width    | height   |
+|--------------------------|----------|----------|
+| Grand IC/Microcontrôleur | 0.10-0.20| 0.06-0.15|
+| IC moyen                 | 0.05-0.10| 0.03-0.07|
+| Condensateur électrolyt. | 0.02-0.05| 0.03-0.08|
+| Condensateur SMD         | 0.01-0.03| 0.01-0.02|
+| Résistance SMD           | 0.01-0.03| 0.008-0.02|
+| Connecteur               | 0.06-0.20| 0.03-0.10|
+| LED                      | 0.01-0.03| 0.01-0.03|
 
-TAILLES DE RÉFÉRENCE (à adapter selon l'image):
-- Grand IC/Microcontrôleur: width=0.12-0.25, height=0.08-0.18
-- IC moyen: width=0.06-0.12, height=0.04-0.08
-- Petit IC/SMD: width=0.03-0.06, height=0.02-0.04
-- Condensateur électrolytique: width=0.025-0.05, height=0.035-0.07
-- Condensateur céramique/SMD: width=0.015-0.03, height=0.01-0.02
-- Résistance SMD: width=0.015-0.03, height=0.008-0.015
-- Connecteur: width=0.08-0.25, height=0.04-0.12
-- Cristal: width=0.025-0.05, height=0.015-0.03
-- LED: width=0.015-0.03, height=0.015-0.03
-- Transistor: width=0.02-0.04, height=0.02-0.04
+VALIDATION (VÉRIFIE AVANT CHAQUE RÉPONSE):
+✓ Le rectangle couvre-t-il visuellement le composant ENTIER?
+✓ Le rectangle n'est-il pas DÉCALÉ par rapport au composant?
+✓ x + width ≤ 1.0 (ne dépasse pas à droite)
+✓ y + height ≤ 1.0 (ne dépasse pas en bas)
+✓ Les coordonnées ont 3 décimales de précision
 
-VALIDATION OBLIGATOIRE:
-✓ 0.0 ≤ x ≤ 0.95
-✓ 0.0 ≤ y ≤ 0.95
-✓ 0.01 ≤ width ≤ 0.4
-✓ 0.01 ≤ height ≤ 0.4
-✓ x + width ≤ 1.0
-✓ y + height ≤ 1.0
+=== COMPOSANTS À DÉTECTER ===
 
-=== LISTE DE CONTRÔLE - COMPOSANTS À DÉTECTER ===
-
-DÉTECTE OBLIGATOIREMENT TOUS CES TYPES:
-□ Condensateurs électrolytiques (cylindriques, marquage +/-)
-□ Condensateurs céramiques/SMD (rectangulaires petits)
-□ Résistances SMD (code numérique visible)
-□ Résistances traversantes (bandes de couleur)
-□ Circuits intégrés (rectangulaires, plusieurs pins)
-□ Microcontrôleurs (grands ICs)
-□ Régulateurs de tension (3 pins ou avec dissipateur)
-□ Connecteurs (USB, alimentation, headers)
-□ Transformateurs (bobinés)
-□ Inductances (parfois avec noyau visible)
-□ Diodes (petites, bande de marquage)
-□ LEDs (transparentes ou colorées)
-□ Transistors (3 pins)
-□ Fusibles
-□ Cristaux/Oscillateurs (boîtiers métalliques)
-□ MOSFETs (boîtiers avec dissipateur)
+OBLIGATOIRE - Identifie TOUS ces types s'ils sont présents:
+• Condensateurs électrolytiques (cylindriques, marquage +/-)
+• Condensateurs céramiques/SMD (rectangulaires petits)
+• Résistances SMD/traversantes
+• Circuits intégrés (rectangulaires, plusieurs pins)
+• Microcontrôleurs (grands ICs)
+• Connecteurs (USB, alimentation, headers)
+• Diodes, LEDs, Transistors
+• Cristaux/Oscillateurs
+• Régulateurs de tension
 
 === DIAGNOSTIC DES DÉFAUTS ===
 
-ERREUR CRITIQUE (status: "error"):
-🔴 Condensateur gonflé (dessus bombé)
-🔴 Composant brûlé/carbonisé (traces noires)
-🔴 Fuite d'électrolyte (taches brunes/oranges)
-🔴 Soudure fondue
-🔴 Composant fissuré/cassé
-🔴 Pistes coupées
+ERREUR (status: "error"):
+🔴 Condensateur gonflé, composant brûlé, fuite d'électrolyte, pistes coupées
 
 AVERTISSEMENT (status: "warning"):
-🟡 Décoloration légère
-🟡 Soudure terne/granuleuse (soudure froide possible)
-🟡 Corrosion légère
-🟡 Composant légèrement décalé
-🟡 Saleté importante
+🟡 Décoloration, soudure terne, corrosion légère, composant décalé
 
 OK (status: "ok"):
-🟢 Soudures brillantes et propres
-🟢 Composant propre et aligné
-🟢 Aucun signe de dommage` : ''}
+🟢 Composant propre, soudures brillantes, bon alignement` : ''}
 
 ${hasMeasurements ? `DONNÉES DE MESURES MATÉRIELLES:
 Ces mesures proviennent d'un microcontrôleur (Arduino/ESP32) connecté à la carte.
@@ -259,104 +237,82 @@ OPERATION MODE: Industrial precision object detection YOLO/Faster R-CNN style wi
 
 You will perform a ${analysisType}.
 
-${hasImage ? `=== ULTRA-PRECISE DETECTION PROTOCOL ===
+${hasImage ? `=== HIGH PRECISION YOLO DETECTION PROTOCOL ===
 
-STEP 1 - IMAGE CALIBRATION:
-Before any detection, you MUST:
-a) Identify the 4 corners of the PCB in the image
-b) Determine orientation (horizontal/vertical)
-c) Estimate effective resolution (how many pixels per typical component)
-d) Identify reference points (connectors, large ICs) to calibrate measurements
+*** CRITICAL RULE: BOUNDING BOX PRECISION ***
+Bounding boxes MUST be EXACTLY positioned over components.
+A positioning error greater than 5% is UNACCEPTABLE.
 
-STEP 2 - STRICT COORDINATE SYSTEM:
-- Top left corner of image = (0.000, 0.000)
-- Bottom right corner of image = (1.000, 1.000)
-- ALL coordinates with EXACTLY 3 decimals
+COORDINATE SYSTEM (VERY IMPORTANT):
+- The entire image goes from (0.0, 0.0) at top-left to (1.0, 1.0) at bottom-right
+- x = horizontal position of the LEFT EDGE of the rectangle (not the center!)
+- y = vertical position of the TOP EDGE of the rectangle (not the center!)
+- width = rectangle width (proportion of total image)
+- height = rectangle height (proportion of total image)
 
-STEP 3 - SYSTEMATIC SCAN METHOD:
-Mentally divide the image into an 8x8 grid:
-1. Scan each cell left to right, top to bottom
-2. For each cell, identify ALL components present
-3. Note components that overlap multiple cells
+PRECISE CALCULATION METHOD (MANDATORY):
+1. Visually identify the EXACT EDGES of the physical component
+2. For the LEFT edge: measure its position from the image's left edge → this is "x"
+3. For the TOP edge: measure its position from the image's top edge → this is "y"
+4. Measure the component's actual WIDTH → this is "width"
+5. Measure the component's actual HEIGHT → this is "height"
+6. Add a 3-5% margin around for visibility
 
-STEP 4 - PRECISE BOUNDING BOX CALCULATION:
-For EACH detected component:
-a) Locate the EXACT GEOMETRIC CENTER of the component
-b) Measure dimensions (width, height) as proportion of image
-c) Calculate:
-   - x = center_x - (width / 2)
-   - y = center_y - (height / 2)
-d) VERIFY that x + width ≤ 1.0 and y + height ≤ 1.0
-e) Add 5-10% margin around the component
+CONCRETE EXAMPLE:
+If a capacitor occupies:
+- Its left edge is at 25% of image width → x = 0.25
+- Its top edge is at 40% of image height → y = 0.40
+- It's 5% of image width → width = 0.05
+- It's 8% of image height → height = 0.08
+Result: {"x": 0.250, "y": 0.400, "width": 0.050, "height": 0.080}
 
-=== ABSOLUTE BOUNDING BOX RULES ===
+VISUAL REFERENCE GRID:
+Imagine the image divided into 10 columns and 10 rows:
+- A component at top-left corner: x ≈ 0.05, y ≈ 0.05
+- A component at center: x ≈ 0.45, y ≈ 0.45
+- A component at bottom-right corner: x ≈ 0.80, y ≈ 0.80
 
-MANDATORY PRECISION:
-- Coordinates with 3 decimals (e.g., 0.123, 0.456)
-- x, y = top left corner of rectangle
-- width, height = rectangle dimensions
+TYPICAL SIZES (REFERENCE):
+| Component              | width    | height   |
+|------------------------|----------|----------|
+| Large IC/Microcontroller| 0.10-0.20| 0.06-0.15|
+| Medium IC              | 0.05-0.10| 0.03-0.07|
+| Electrolytic capacitor | 0.02-0.05| 0.03-0.08|
+| SMD capacitor          | 0.01-0.03| 0.01-0.02|
+| SMD resistor           | 0.01-0.03| 0.008-0.02|
+| Connector              | 0.06-0.20| 0.03-0.10|
+| LED                    | 0.01-0.03| 0.01-0.03|
 
-REFERENCE SIZES (adapt to image):
-- Large IC/Microcontroller: width=0.12-0.25, height=0.08-0.18
-- Medium IC: width=0.06-0.12, height=0.04-0.08
-- Small IC/SMD: width=0.03-0.06, height=0.02-0.04
-- Electrolytic capacitor: width=0.025-0.05, height=0.035-0.07
-- Ceramic/SMD capacitor: width=0.015-0.03, height=0.01-0.02
-- SMD resistor: width=0.015-0.03, height=0.008-0.015
-- Connector: width=0.08-0.25, height=0.04-0.12
-- Crystal: width=0.025-0.05, height=0.015-0.03
-- LED: width=0.015-0.03, height=0.015-0.03
-- Transistor: width=0.02-0.04, height=0.02-0.04
+VALIDATION (CHECK BEFORE EACH RESPONSE):
+✓ Does the rectangle visually cover the ENTIRE component?
+✓ Is the rectangle NOT OFFSET from the component?
+✓ x + width ≤ 1.0 (doesn't exceed right edge)
+✓ y + height ≤ 1.0 (doesn't exceed bottom edge)
+✓ Coordinates have 3 decimal precision
 
-MANDATORY VALIDATION:
-✓ 0.0 ≤ x ≤ 0.95
-✓ 0.0 ≤ y ≤ 0.95
-✓ 0.01 ≤ width ≤ 0.4
-✓ 0.01 ≤ height ≤ 0.4
-✓ x + width ≤ 1.0
-✓ y + height ≤ 1.0
+=== COMPONENTS TO DETECT ===
 
-=== CHECKLIST - COMPONENTS TO DETECT ===
-
-MUST DETECT ALL THESE TYPES:
-□ Electrolytic capacitors (cylindrical, +/- marking)
-□ Ceramic/SMD capacitors (small rectangular)
-□ SMD resistors (visible numeric code)
-□ Through-hole resistors (color bands)
-□ Integrated circuits (rectangular, multiple pins)
-□ Microcontrollers (large ICs)
-□ Voltage regulators (3 pins or with heatsink)
-□ Connectors (USB, power, headers)
-□ Transformers (wound)
-□ Inductors (sometimes with visible core)
-□ Diodes (small, marking band)
-□ LEDs (transparent or colored)
-□ Transistors (3 pins)
-□ Fuses
-□ Crystals/Oscillators (metal housings)
-□ MOSFETs (packages with heatsink)
+MANDATORY - Identify ALL these types if present:
+• Electrolytic capacitors (cylindrical, +/- marking)
+• Ceramic/SMD capacitors (small rectangular)
+• SMD/through-hole resistors
+• Integrated circuits (rectangular, multiple pins)
+• Microcontrollers (large ICs)
+• Connectors (USB, power, headers)
+• Diodes, LEDs, Transistors
+• Crystals/Oscillators
+• Voltage regulators
 
 === FAULT DIAGNOSIS ===
 
-CRITICAL ERROR (status: "error"):
-🔴 Bulging capacitor (domed top)
-🔴 Burnt/charred component (black marks)
-🔴 Electrolyte leakage (brown/orange stains)
-🔴 Melted solder
-🔴 Cracked/broken component
-🔴 Cut traces
+ERROR (status: "error"):
+🔴 Bulging capacitor, burnt component, electrolyte leakage, cut traces
 
 WARNING (status: "warning"):
-🟡 Slight discoloration
-🟡 Dull/grainy solder (possible cold solder)
-🟡 Light corrosion
-🟡 Slightly misaligned component
-🟡 Significant dirt
+🟡 Discoloration, dull solder, light corrosion, misaligned component
 
 OK (status: "ok"):
-🟢 Shiny and clean solder joints
-🟢 Clean and aligned component
-🟢 No signs of damage` : ''}
+🟢 Clean component, shiny solder joints, good alignment` : ''}
 
 ${hasMeasurements ? `HARDWARE MEASUREMENT DATA:
 These measurements come from a microcontroller (Arduino/ESP32) connected to the board.

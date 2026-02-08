@@ -80,97 +80,138 @@ export function ImageAnalysisOverlay({
 
   return (
     <div ref={containerRef} className="relative w-full rounded-xl overflow-hidden border border-border/50">
-      <img
-        src={imageUrl}
-        alt="Circuit board analysis"
-        className="w-full h-auto"
-        style={{ display: "block" }}
-      />
-      
-      {/* Bounding boxes overlay */}
-      {imageLoaded && (
-        <div
-          className="absolute inset-0"
-          style={{ width: dimensions.width, height: dimensions.height }}
-        >
-          {boundingBoxes.map((box, index) => {
-            const colors = statusColors[box.status];
-            const isSelected = selectedIndex === index;
-            
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "absolute cursor-pointer transition-all duration-200",
-                  isSelected && "z-10"
-                )}
-                style={{
-                  left: `${box.x * 100}%`,
-                  top: `${box.y * 100}%`,
-                  width: `${box.width * 100}%`,
-                  height: `${box.height * 100}%`,
-                  border: `2px solid ${colors.border}`,
-                  backgroundColor: isSelected ? colors.bg : "transparent",
-                  boxShadow: isSelected
-                    ? `0 0 20px ${colors.border}, inset 0 0 20px ${colors.bg}`
-                    : `0 0 8px ${colors.border}`,
-                }}
-                onClick={() => onBoxClick?.(box, index)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.bg;
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }
-                }}
-              >
-                {/* Label */}
+      {/* Container for image with exact positioning */}
+      <div className="relative" style={{ width: "100%" }}>
+        <img
+          ref={(el) => {
+            if (el && imageLoaded) {
+              const rect = el.getBoundingClientRect();
+              if (rect.width !== dimensions.width || rect.height !== dimensions.height) {
+                setDimensions({ width: rect.width, height: rect.height });
+              }
+            }
+          }}
+          src={imageUrl}
+          alt="Circuit board analysis"
+          className="w-full h-auto block"
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            setDimensions({ width: img.offsetWidth, height: img.offsetHeight });
+            setImageLoaded(true);
+          }}
+        />
+        
+        {/* Bounding boxes overlay - positioned exactly over the image */}
+        {imageLoaded && (
+          <div
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{ 
+              width: "100%", 
+              height: "100%",
+            }}
+          >
+            {boundingBoxes.map((box, index) => {
+              const colors = statusColors[box.status];
+              const isSelected = selectedIndex === index;
+              
+              // Calculate pixel positions from normalized coordinates
+              // x, y are top-left corner; width, height are dimensions
+              const left = box.x * 100;
+              const top = box.y * 100;
+              const width = box.width * 100;
+              const height = box.height * 100;
+              
+              return (
                 <div
-                  className="absolute -top-6 left-0 px-2 py-0.5 text-xs font-mono font-bold whitespace-nowrap rounded-t-md"
+                  key={index}
+                  className={cn(
+                    "absolute cursor-pointer transition-all duration-200 pointer-events-auto",
+                    isSelected && "z-10"
+                  )}
                   style={{
-                    backgroundColor: colors.border,
-                    color: "#000",
+                    left: `${left}%`,
+                    top: `${top}%`,
+                    width: `${width}%`,
+                    height: `${height}%`,
+                    border: `2px solid ${colors.border}`,
+                    backgroundColor: isSelected ? colors.bg : "transparent",
+                    boxShadow: isSelected
+                      ? `0 0 20px ${colors.border}, inset 0 0 20px ${colors.bg}`
+                      : `0 0 8px ${colors.border}`,
+                    // Ensure box-sizing doesn't affect positioning
+                    boxSizing: "border-box",
+                  }}
+                  onClick={() => onBoxClick?.(box, index)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bg;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
                   }}
                 >
-                  {box.label}
-                  {box.confidence && (
-                    <span className="ml-1 opacity-75">
-                      {Math.round(box.confidence * 100)}%
-                    </span>
+                  {/* Label - positioned above the box */}
+                  <div
+                    className="absolute left-0 px-2 py-0.5 text-xs font-mono font-bold whitespace-nowrap rounded-t-md"
+                    style={{
+                      bottom: "100%",
+                      marginBottom: "2px",
+                      backgroundColor: colors.border,
+                      color: "#000",
+                      maxWidth: "200px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {box.label}
+                    {box.confidence && (
+                      <span className="ml-1 opacity-75">
+                        {Math.round(box.confidence * 100)}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Corner markers for better visibility */}
+                  <div
+                    className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2"
+                    style={{ borderColor: colors.border, margin: "-1px" }}
+                  />
+                  <div
+                    className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2"
+                    style={{ borderColor: colors.border, margin: "-1px" }}
+                  />
+                  <div
+                    className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2"
+                    style={{ borderColor: colors.border, margin: "-1px" }}
+                  />
+                  <div
+                    className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2"
+                    style={{ borderColor: colors.border, margin: "-1px" }}
+                  />
+
+                  {/* Center crosshair for precision reference */}
+                  <div 
+                    className="absolute top-1/2 left-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 opacity-60"
+                    style={{
+                      borderRadius: "50%",
+                      backgroundColor: colors.border,
+                    }}
+                  />
+
+                  {/* Status indicator pulse for errors */}
+                  {box.status === "error" && (
+                    <div
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse"
+                      style={{ backgroundColor: colors.border }}
+                    />
                   )}
                 </div>
-
-                {/* Corner markers */}
-                <div
-                  className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2"
-                  style={{ borderColor: colors.border }}
-                />
-                <div
-                  className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2"
-                  style={{ borderColor: colors.border }}
-                />
-                <div
-                  className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2"
-                  style={{ borderColor: colors.border }}
-                />
-                <div
-                  className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2"
-                  style={{ borderColor: colors.border }}
-                />
-
-                {/* Status indicator pulse for errors */}
-                {box.status === "error" && (
-                  <div
-                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse"
-                    style={{ backgroundColor: colors.border }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Legend */}
       <div className="absolute bottom-3 right-3 flex gap-3 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50">
@@ -180,11 +221,11 @@ export function ImageAnalysisOverlay({
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <div className="w-3 h-3 rounded-sm border-2" style={{ borderColor: statusColors.warning.border }} />
-          <span className="text-muted-foreground">Advertencia</span>
+          <span className="text-muted-foreground">Warning</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <div className="w-3 h-3 rounded-sm border-2" style={{ borderColor: statusColors.error.border }} />
-          <span className="text-muted-foreground">Fallo</span>
+          <span className="text-muted-foreground">Error</span>
         </div>
       </div>
     </div>
