@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles, ImagePlus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ReactMarkdown from "react-markdown";
@@ -11,13 +11,16 @@ import ReactMarkdown from "react-markdown";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  image?: string;
 }
 
 export function ExpertChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
@@ -27,12 +30,38 @@ export function ExpertChat() {
     }
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSelectedImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
 
-    const userMessage: Message = { role: "user", content: input.trim() };
+  const removeImage = useCallback(() => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const sendMessage = async () => {
+    if ((!input.trim() && !selectedImage) || isLoading) return;
+
+    const userMessage: Message = { 
+      role: "user", 
+      content: input.trim() || (selectedImage ? "Analysez cette image" : ""),
+      image: selectedImage || undefined
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     setIsLoading(true);
 
     try {
@@ -45,7 +74,11 @@ export function ExpertChat() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            messages: [...messages, userMessage],
+            messages: [...messages, userMessage].map(m => ({
+              role: m.role,
+              content: m.content,
+              image: m.image
+            })),
             language,
           }),
         }
@@ -190,12 +223,19 @@ export function ExpertChat() {
                         : "bg-muted/50"
                     }`}
                   >
+                    {message.image && (
+                      <img 
+                        src={message.image} 
+                        alt="User uploaded" 
+                        className="max-w-full max-h-48 rounded-lg mb-2 object-contain"
+                      />
+                    )}
                     {message.role === "assistant" ? (
                       <div className="prose prose-sm prose-invert max-w-none">
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     ) : (
-                      <p className="text-sm">{message.content}</p>
+                      message.content && <p className="text-sm">{message.content}</p>
                     )}
                   </div>
                 </div>
@@ -214,28 +254,64 @@ export function ExpertChat() {
           )}
         </ScrollArea>
 
-        <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t.expertChat.placeholder}
-            className="min-h-[44px] max-h-[120px] resize-none bg-background/50"
-            disabled={isLoading}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-            variant="techGlow"
-            size="icon"
-            className="shrink-0"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
+        <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+          {selectedImage && (
+            <div className="relative inline-block">
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                className="max-h-24 rounded-lg object-contain border border-border"
+              />
+              <button
+                onClick={removeImage}
+                className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                title={t.expertChat.removeImage}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              title={t.expertChat.addImage}
+              className="shrink-0"
+            >
+              <ImagePlus className="w-4 h-4" />
+            </Button>
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t.expertChat.placeholder}
+              className="min-h-[44px] max-h-[120px] resize-none bg-background/50"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={(!input.trim() && !selectedImage) || isLoading}
+              variant="techGlow"
+              size="icon"
+              className="shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
