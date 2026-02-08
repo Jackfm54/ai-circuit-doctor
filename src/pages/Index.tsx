@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircle } from "lucide-react";
 import { ExpertChat } from "@/components/ExpertChat";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Index() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -17,6 +18,7 @@ export default function Index() {
   const [hardwareMeasurements, setHardwareMeasurements] = useState<MeasurementData[]>([]);
   const [analyzedImageUrl, setAnalyzedImageUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
 
   const handleImageAnalysis = async (file: File, preview: string) => {
     setIsAnalyzing(true);
@@ -36,30 +38,31 @@ export default function Index() {
           },
           body: JSON.stringify({ 
             image: base64Image,
-            measurements: hardwareMeasurements.length > 0 ? hardwareMeasurements : undefined
+            measurements: hardwareMeasurements.length > 0 ? hardwareMeasurements : undefined,
+            language
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Error al analizar la imagen");
+        throw new Error(errorData.error || t.toasts.analysisErrorDesc);
       }
 
       const result = await response.json();
       setDiagnosticResult(result);
       
       toast({
-        title: "Análisis completado",
+        title: t.toasts.analysisComplete,
         description: hardwareMeasurements.length > 0 
-          ? "Diagnóstico combinado (imagen + hardware) finalizado."
-          : "El diagnóstico de la tarjeta ha finalizado.",
+          ? t.toasts.combinedAnalysisDesc
+          : t.toasts.analysisCompleteDesc,
       });
     } catch (error) {
       console.error("Analysis error:", error);
       toast({
-        title: "Error en el análisis",
-        description: error instanceof Error ? error.message : "No se pudo analizar la imagen",
+        title: t.toasts.analysisError,
+        description: error instanceof Error ? error.message : t.toasts.analysisErrorDesc,
         variant: "destructive",
       });
     } finally {
@@ -70,8 +73,8 @@ export default function Index() {
   const handleHardwareOnlyAnalysis = async () => {
     if (hardwareMeasurements.length === 0) {
       toast({
-        title: "Sin mediciones",
-        description: "Realiza un escaneo de hardware primero para obtener mediciones.",
+        title: t.hardware.noMeasurements,
+        description: t.hardware.noMeasurementsDesc,
         variant: "destructive",
       });
       return;
@@ -90,28 +93,29 @@ export default function Index() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ 
-            measurements: hardwareMeasurements
+            measurements: hardwareMeasurements,
+            language
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Error al analizar las mediciones");
+        throw new Error(errorData.error || t.toasts.analysisErrorDesc);
       }
 
       const result = await response.json();
       setDiagnosticResult(result);
       
       toast({
-        title: "Análisis completado",
-        description: "Diagnóstico basado en mediciones de hardware finalizado.",
+        title: t.toasts.analysisComplete,
+        description: t.toasts.hardwareAnalysisDesc,
       });
     } catch (error) {
       console.error("Analysis error:", error);
       toast({
-        title: "Error en el análisis",
-        description: error instanceof Error ? error.message : "No se pudo analizar las mediciones",
+        title: t.toasts.analysisError,
+        description: error instanceof Error ? error.message : t.toasts.analysisErrorDesc,
         variant: "destructive",
       });
     } finally {
@@ -122,8 +126,8 @@ export default function Index() {
   const handleMeasurementsReady = (measurements: MeasurementData[]) => {
     setHardwareMeasurements(measurements);
     toast({
-      title: "Mediciones capturadas",
-      description: `Se registraron ${measurements.length} mediciones. Puedes analizarlas ahora.`,
+      title: t.toasts.measurementsCaptured,
+      description: `${measurements.length} ${t.toasts.measurementsCapturedDesc}`,
     });
   };
 
@@ -132,6 +136,12 @@ export default function Index() {
     setHardwareMeasurements([]);
     setAnalyzedImageUrl(null);
   };
+
+  const features = [
+    { icon: Zap, label: t.features.fastAnalysis, desc: t.features.fastAnalysisDesc },
+    { icon: Shield, label: t.features.advancedAI, desc: t.features.advancedAIDesc },
+    { icon: Clock, label: t.features.realTime, desc: t.features.realTimeDesc },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,25 +161,20 @@ export default function Index() {
             <div className="text-center space-y-4 max-w-2xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-mono">
                 <Cpu className="w-4 h-4" />
-                Sistema de Diagnóstico Inteligente
+                {t.hero.badge}
               </div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-                Detecta fallas en
-                <span className="text-primary glow-text block mt-2">tarjetas electrónicas</span>
+                {t.hero.title}
+                <span className="text-primary glow-text block mt-2">{t.hero.titleHighlight}</span>
               </h1>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                Conecta tu hardware de diagnóstico o sube una imagen para que la IA 
-                identifique componentes dañados con precisión.
+                {t.hero.description}
               </p>
             </div>
 
             {/* Features */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              {[
-                { icon: Zap, label: "Análisis rápido", desc: "Resultados en segundos" },
-                { icon: Shield, label: "IA avanzada", desc: "Modelo entrenado" },
-                { icon: Clock, label: "Tiempo real", desc: "Mediciones en vivo" },
-              ].map((feature, idx) => (
+              {features.map((feature, idx) => (
                 <div 
                   key={idx}
                   className="flex items-center gap-3 p-4 rounded-xl bg-card/50 border border-border/50"
@@ -190,19 +195,19 @@ export default function Index() {
               <TabsList className="grid grid-cols-4 w-full bg-card/50 border border-border/50">
                 <TabsTrigger value="hardware" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Usb className="w-4 h-4 mr-2" />
-                  Hardware
+                  {t.tabs.hardware}
                 </TabsTrigger>
                 <TabsTrigger value="image" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Camera className="w-4 h-4 mr-2" />
-                  Imagen
+                  {t.tabs.image}
                 </TabsTrigger>
                 <TabsTrigger value="chat" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  Experto IA
+                  {t.tabs.expertAI}
                 </TabsTrigger>
                 <TabsTrigger value="guide" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Guía
+                  {t.tabs.guide}
                 </TabsTrigger>
               </TabsList>
 
@@ -220,12 +225,12 @@ export default function Index() {
                       {isAnalyzing ? (
                         <>
                           <Cpu className="w-4 h-4 mr-2 animate-spin" />
-                          Analizando...
+                          {t.hardware.analyzing}
                         </>
                       ) : (
                         <>
                           <Zap className="w-4 h-4 mr-2" />
-                          Analizar con IA ({hardwareMeasurements.length} mediciones)
+                          {t.hardware.analyzeButton} ({hardwareMeasurements.length} {t.hardware.measurements})
                         </>
                       )}
                     </Button>
@@ -234,10 +239,10 @@ export default function Index() {
 
                 <div className="text-center text-sm text-muted-foreground">
                   <p>
-                    Conecta tu Arduino/ESP32 para realizar mediciones físicas.
+                    {t.hardware.connectPrompt}
                     {hardwareMeasurements.length > 0 && (
                       <span className="text-primary ml-1">
-                        También puedes combinar con análisis de imagen.
+                        {t.hardware.combineWithImage}
                       </span>
                     )}
                   </p>
@@ -249,7 +254,7 @@ export default function Index() {
                   {hardwareMeasurements.length > 0 && (
                     <div className="p-4 rounded-lg bg-success/10 border border-success/30 text-center">
                       <p className="text-sm text-success">
-                        ✓ {hardwareMeasurements.length} mediciones de hardware listas para combinar con el análisis visual
+                        ✓ {hardwareMeasurements.length} {t.hardware.measurementsReady}
                       </p>
                     </div>
                   )}
@@ -269,10 +274,10 @@ export default function Index() {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Diagnóstico Completo</h2>
+              <h2 className="text-2xl font-bold">{t.diagnostic.title}</h2>
               <Button onClick={handleReset} variant="tech">
                 <RotateCcw className="w-4 h-4" />
-                Nuevo análisis
+                {t.diagnostic.newAnalysis}
               </Button>
             </div>
             <DiagnosticResult data={diagnosticResult} imageUrl={analyzedImageUrl || undefined} />
@@ -280,7 +285,7 @@ export default function Index() {
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-primary" />
-                Consulta al Experto
+                {t.diagnostic.consultExpert}
               </h3>
               <ExpertChat />
             </div>
