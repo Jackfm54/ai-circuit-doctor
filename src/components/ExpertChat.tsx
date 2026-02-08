@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -18,6 +19,7 @@ export function ExpertChat() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,13 +46,14 @@ export function ExpertChat() {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
+            language,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Error al comunicarse con el experto");
+        throw new Error(errorData.error || t.expertChat.errorMessage);
       }
 
       // Handle streaming response
@@ -97,8 +100,8 @@ export function ExpertChat() {
     } catch (error) {
       console.error("Chat error:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo enviar el mensaje",
+        title: t.expertChat.error,
+        description: error instanceof Error ? error.message : t.expertChat.errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -113,13 +116,6 @@ export function ExpertChat() {
     }
   };
 
-  const suggestedQuestions = [
-    "¿Cómo identificar un capacitor dañado?",
-    "¿Qué herramientas necesito para reparar PCBs?",
-    "¿Cómo soldar componentes SMD?",
-    "¿Qué causa las soldaduras frías?",
-  ];
-
   return (
     <Card className="border-primary/30 bg-card/50 backdrop-blur-sm h-[500px] flex flex-col">
       <CardHeader className="pb-3 border-b border-border/50">
@@ -127,7 +123,7 @@ export function ExpertChat() {
           <div className="p-2 rounded-lg bg-primary/20">
             <Bot className="w-5 h-5 text-primary" />
           </div>
-          Ingeniero Electrónico Experto
+          {t.expertChat.title}
           <Sparkles className="w-4 h-4 text-primary ml-auto" />
         </CardTitle>
       </CardHeader>
@@ -139,20 +135,19 @@ export function ExpertChat() {
               <div className="text-center py-8">
                 <Bot className="w-12 h-12 mx-auto text-primary/50 mb-4" />
                 <p className="text-muted-foreground text-sm">
-                  ¡Hola! Soy tu ingeniero electrónico experto. Puedo ayudarte con:
+                  {t.expertChat.greeting}
                 </p>
                 <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                  <li>• Diagnóstico de fallas en PCBs</li>
-                  <li>• Técnicas de soldadura y reparación</li>
-                  <li>• Identificación de componentes</li>
-                  <li>• Recomendaciones de herramientas</li>
+                  {t.expertChat.capabilities.map((cap, idx) => (
+                    <li key={idx}>• {cap}</li>
+                  ))}
                 </ul>
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground text-center">Preguntas sugeridas:</p>
+                <p className="text-xs text-muted-foreground text-center">{t.expertChat.suggestedQuestions}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {suggestedQuestions.map((question, idx) => (
+                  {t.expertChat.questions.map((question, idx) => (
                     <Button
                       key={idx}
                       variant="outline"
@@ -224,7 +219,7 @@ export function ExpertChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Escribe tu pregunta..."
+            placeholder={t.expertChat.placeholder}
             className="min-h-[44px] max-h-[120px] resize-none bg-background/50"
             disabled={isLoading}
           />

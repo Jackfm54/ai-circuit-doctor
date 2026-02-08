@@ -1,0 +1,255 @@
+export const translations = {
+  fr: {
+    // Header
+    header: {
+      title: "CircuitDiag",
+      subtitle: "Diagnostic IA v1.0",
+    },
+    // Hero Section
+    hero: {
+      badge: "Système de Diagnostic Intelligent",
+      title: "Détectez les pannes sur",
+      titleHighlight: "cartes électroniques",
+      description: "Connectez votre matériel de diagnostic ou téléchargez une image pour que l'IA identifie les composants endommagés avec précision.",
+    },
+    // Features
+    features: {
+      fastAnalysis: "Analyse rapide",
+      fastAnalysisDesc: "Résultats en secondes",
+      advancedAI: "IA avancée",
+      advancedAIDesc: "Modèle entraîné",
+      realTime: "Temps réel",
+      realTimeDesc: "Mesures en direct",
+    },
+    // Tabs
+    tabs: {
+      hardware: "Matériel",
+      image: "Image",
+      expertAI: "Expert IA",
+      guide: "Guide",
+    },
+    // Hardware Tab
+    hardware: {
+      connectPrompt: "Connectez votre Arduino/ESP32 pour effectuer des mesures physiques.",
+      combineWithImage: "Vous pouvez aussi combiner avec l'analyse d'image.",
+      analyzing: "Analyse en cours...",
+      analyzeButton: "Analyser avec IA",
+      measurements: "mesures",
+      measurementsCaptured: "Mesures capturées",
+      measurementsReady: "mesures de matériel prêtes à combiner avec l'analyse visuelle",
+      noMeasurements: "Sans mesures",
+      noMeasurementsDesc: "Effectuez d'abord un scan matériel pour obtenir des mesures.",
+    },
+    // Image Uploader
+    imageUploader: {
+      dropzone: "Glissez-déposez une image ici",
+      or: "ou",
+      browse: "Parcourir les fichiers",
+      formats: "JPG, PNG, GIF jusqu'à 10MB",
+      analyzing: "Analyse de l'image...",
+    },
+    // Diagnostic Results
+    diagnostic: {
+      title: "Diagnostic Complet",
+      newAnalysis: "Nouvelle analyse",
+      consultExpert: "Consulter l'Expert",
+      overallStatus: "Résultat du Diagnostic",
+      operational: "Opérationnel",
+      warning: "Avertissement",
+      faultDetected: "Panne détectée",
+      operationalCount: "Opérationnels",
+      warningsCount: "Avertissements",
+      faultsCount: "Avec pannes",
+      componentsAnalyzed: "Composants Analysés",
+      recommendations: "Recommandations",
+      visualAnalysis: "Analyse Visuelle - Détection de Composants",
+      clickForDetails: "Cliquez sur les cadres pour voir les détails du composant",
+      confidence: "conf.",
+    },
+    // Expert Chat
+    expertChat: {
+      title: "Ingénieur Électronicien Expert",
+      greeting: "Bonjour ! Je suis votre ingénieur électronicien expert. Je peux vous aider avec :",
+      capabilities: [
+        "Diagnostic de pannes sur PCB",
+        "Techniques de soudure et réparation",
+        "Identification de composants",
+        "Recommandations d'outils",
+      ],
+      suggestedQuestions: "Questions suggérées :",
+      questions: [
+        "Comment identifier un condensateur endommagé ?",
+        "Quels outils sont nécessaires pour réparer des PCB ?",
+        "Comment souder des composants SMD ?",
+        "Qu'est-ce qui cause les soudures froides ?",
+      ],
+      placeholder: "Écrivez votre question...",
+      error: "Erreur",
+      errorMessage: "Impossible d'envoyer le message",
+    },
+    // Serial Connection
+    serial: {
+      title: "Connexion Matériel",
+      description: "Connectez votre appareil de diagnostic via USB",
+      connect: "Connecter",
+      disconnect: "Déconnecter",
+      connected: "Connecté",
+      disconnected: "Déconnecté",
+      scanning: "Scan en cours...",
+      startScan: "Démarrer le scan",
+      stopScan: "Arrêter le scan",
+      notSupported: "Web Serial non supporté",
+      notSupportedDesc: "Utilisez Chrome ou Edge pour cette fonctionnalité.",
+    },
+    // Hardware Guide
+    guide: {
+      title: "Guide de Configuration Matériel",
+      description: "Instructions pour connecter votre appareil de diagnostic",
+    },
+    // Toasts
+    toasts: {
+      analysisComplete: "Analyse terminée",
+      analysisCompleteDesc: "Le diagnostic de la carte est terminé.",
+      combinedAnalysisDesc: "Diagnostic combiné (image + matériel) terminé.",
+      hardwareAnalysisDesc: "Diagnostic basé sur les mesures matérielles terminé.",
+      analysisError: "Erreur d'analyse",
+      analysisErrorDesc: "Impossible d'analyser l'image",
+      measurementsCaptured: "Mesures capturées",
+      measurementsCapturedDesc: "mesures enregistrées. Vous pouvez les analyser maintenant.",
+    },
+    // Language
+    language: {
+      label: "Langue",
+      french: "Français",
+      english: "English",
+    },
+  },
+  en: {
+    // Header
+    header: {
+      title: "CircuitDiag",
+      subtitle: "AI Diagnosis v1.0",
+    },
+    // Hero Section
+    hero: {
+      badge: "Intelligent Diagnostic System",
+      title: "Detect faults on",
+      titleHighlight: "electronic boards",
+      description: "Connect your diagnostic hardware or upload an image for AI to identify damaged components with precision.",
+    },
+    // Features
+    features: {
+      fastAnalysis: "Fast analysis",
+      fastAnalysisDesc: "Results in seconds",
+      advancedAI: "Advanced AI",
+      advancedAIDesc: "Trained model",
+      realTime: "Real-time",
+      realTimeDesc: "Live measurements",
+    },
+    // Tabs
+    tabs: {
+      hardware: "Hardware",
+      image: "Image",
+      expertAI: "AI Expert",
+      guide: "Guide",
+    },
+    // Hardware Tab
+    hardware: {
+      connectPrompt: "Connect your Arduino/ESP32 to perform physical measurements.",
+      combineWithImage: "You can also combine with image analysis.",
+      analyzing: "Analyzing...",
+      analyzeButton: "Analyze with AI",
+      measurements: "measurements",
+      measurementsCaptured: "Measurements captured",
+      measurementsReady: "hardware measurements ready to combine with visual analysis",
+      noMeasurements: "No measurements",
+      noMeasurementsDesc: "Perform a hardware scan first to get measurements.",
+    },
+    // Image Uploader
+    imageUploader: {
+      dropzone: "Drag and drop an image here",
+      or: "or",
+      browse: "Browse files",
+      formats: "JPG, PNG, GIF up to 10MB",
+      analyzing: "Analyzing image...",
+    },
+    // Diagnostic Results
+    diagnostic: {
+      title: "Complete Diagnostic",
+      newAnalysis: "New analysis",
+      consultExpert: "Consult Expert",
+      overallStatus: "Diagnostic Result",
+      operational: "Operational",
+      warning: "Warning",
+      faultDetected: "Fault detected",
+      operationalCount: "Operational",
+      warningsCount: "Warnings",
+      faultsCount: "With faults",
+      componentsAnalyzed: "Components Analyzed",
+      recommendations: "Recommendations",
+      visualAnalysis: "Visual Analysis - Component Detection",
+      clickForDetails: "Click on the boxes to see component details",
+      confidence: "conf.",
+    },
+    // Expert Chat
+    expertChat: {
+      title: "Expert Electronics Engineer",
+      greeting: "Hello! I am your expert electronics engineer. I can help you with:",
+      capabilities: [
+        "PCB fault diagnosis",
+        "Soldering and repair techniques",
+        "Component identification",
+        "Tool recommendations",
+      ],
+      suggestedQuestions: "Suggested questions:",
+      questions: [
+        "How to identify a damaged capacitor?",
+        "What tools are needed for PCB repair?",
+        "How to solder SMD components?",
+        "What causes cold solder joints?",
+      ],
+      placeholder: "Write your question...",
+      error: "Error",
+      errorMessage: "Could not send message",
+    },
+    // Serial Connection
+    serial: {
+      title: "Hardware Connection",
+      description: "Connect your diagnostic device via USB",
+      connect: "Connect",
+      disconnect: "Disconnect",
+      connected: "Connected",
+      disconnected: "Disconnected",
+      scanning: "Scanning...",
+      startScan: "Start scan",
+      stopScan: "Stop scan",
+      notSupported: "Web Serial not supported",
+      notSupportedDesc: "Use Chrome or Edge for this feature.",
+    },
+    // Hardware Guide
+    guide: {
+      title: "Hardware Setup Guide",
+      description: "Instructions for connecting your diagnostic device",
+    },
+    // Toasts
+    toasts: {
+      analysisComplete: "Analysis complete",
+      analysisCompleteDesc: "Board diagnosis is complete.",
+      combinedAnalysisDesc: "Combined diagnosis (image + hardware) complete.",
+      hardwareAnalysisDesc: "Hardware-based diagnosis complete.",
+      analysisError: "Analysis error",
+      analysisErrorDesc: "Could not analyze the image",
+      measurementsCaptured: "Measurements captured",
+      measurementsCapturedDesc: "measurements recorded. You can analyze them now.",
+    },
+    // Language
+    language: {
+      label: "Language",
+      french: "Français",
+      english: "English",
+    },
+  },
+} as const;
+
+export type Language = keyof typeof translations;
+export type TranslationKeys = (typeof translations)[Language];
