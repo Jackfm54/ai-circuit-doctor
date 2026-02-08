@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, X, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ImageUploaderProps {
   onImageSelect: (file: File, preview: string) => void;
@@ -12,6 +13,7 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { t } = useLanguage();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -89,7 +91,7 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
           <div className="relative">
             <img 
               src={preview} 
-              alt="Tarjeta electrónica" 
+              alt={t.imageUploader.imageAlt} 
               className="w-full h-auto max-h-96 object-contain bg-background/50"
             />
             {!isAnalyzing && (
@@ -107,13 +109,13 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
               <Upload className="w-8 h-8 text-primary" />
             </div>
             <span className="text-lg font-medium mb-2">
-              Arrastra una imagen aquí
+              {t.imageUploader.dropzone}
             </span>
             <span className="text-sm text-muted-foreground mb-4">
-              o haz clic para seleccionar
+              {t.imageUploader.or}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
-              PNG, JPG hasta 10MB
+              {t.imageUploader.formats}
             </span>
             <input
               type="file"
@@ -136,12 +138,12 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
           {isAnalyzing ? (
             <>
               <Cpu className="w-5 h-5 animate-spin" />
-              Analizando componentes...
+              {t.imageUploader.analyzing}
             </>
           ) : (
             <>
               <Cpu className="w-5 h-5" />
-              Iniciar diagnóstico
+              {t.imageUploader.startDiagnostic}
             </>
           )}
         </Button>

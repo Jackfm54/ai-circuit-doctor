@@ -43,10 +43,12 @@ export const translations = {
     // Image Uploader
     imageUploader: {
       dropzone: "Glissez-déposez une image ici",
-      or: "ou",
+      or: "ou cliquez pour sélectionner",
       browse: "Parcourir les fichiers",
-      formats: "JPG, PNG, GIF jusqu'à 10MB",
-      analyzing: "Analyse de l'image...",
+      formats: "PNG, JPG jusqu'à 10MB",
+      analyzing: "Analyse des composants...",
+      startDiagnostic: "Démarrer le diagnostic",
+      imageAlt: "Carte électronique",
     },
     // Diagnostic Results
     diagnostic: {
@@ -170,10 +172,12 @@ export const translations = {
     // Image Uploader
     imageUploader: {
       dropzone: "Drag and drop an image here",
-      or: "or",
+      or: "or click to select",
       browse: "Browse files",
-      formats: "JPG, PNG, GIF up to 10MB",
-      analyzing: "Analyzing image...",
+      formats: "PNG, JPG up to 10MB",
+      analyzing: "Analyzing components...",
+      startDiagnostic: "Start diagnostic",
+      imageAlt: "Electronic board",
     },
     // Diagnostic Results
     diagnostic: {
