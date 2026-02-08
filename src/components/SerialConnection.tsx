@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSerialConnection, MeasurementData } from "@/hooks/useSerialConnection";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { cn } from "@/lib/utils";
 
 interface SerialConnectionProps {
@@ -19,14 +20,8 @@ const measurementIcons: Record<MeasurementData["type"], typeof Zap> = {
   signal: Activity,
 };
 
-const measurementLabels: Record<MeasurementData["type"], string> = {
-  voltage: "Voltaje",
-  continuity: "Continuidad",
-  resistance: "Resistencia",
-  signal: "Señal",
-};
-
 export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps) {
+  const { t, language } = useLanguage();
   const {
     isConnected,
     isSupported,
@@ -41,6 +36,13 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
   } = useSerialConnection();
 
   const [isScanning, setIsScanning] = useState(false);
+
+  const measurementLabels: Record<MeasurementData["type"], string> = {
+    voltage: language === "fr" ? "Tension" : "Voltage",
+    continuity: language === "fr" ? "Continuité" : "Continuity",
+    resistance: language === "fr" ? "Résistance" : "Resistance",
+    signal: language === "fr" ? "Signal" : "Signal",
+  };
 
   const handleConnect = async () => {
     await connect();
@@ -87,7 +89,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Tu navegador no soporta Web Serial API. Usa Chrome, Edge o Opera para conectar hardware.
+              {t.serial.notSupportedDesc}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -101,7 +103,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Usb className="w-5 h-5 text-primary" />
-            Conexión Hardware
+            {t.serial.title}
           </CardTitle>
           <Badge
             variant="outline"
@@ -114,12 +116,12 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
             {isConnected ? (
               <>
                 <Wifi className="w-3 h-3 mr-1" />
-                Conectado
+                {t.serial.connected}
               </>
             ) : (
               <>
                 <WifiOff className="w-3 h-3 mr-1" />
-                Desconectado
+                {t.serial.disconnected}
               </>
             )}
           </Badge>
@@ -136,17 +138,17 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
         {!isConnected ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Conecta tu Arduino/ESP32 para realizar mediciones físicas en la tarjeta electrónica.
+              {t.serial.description}
             </p>
             <Button onClick={handleConnect} variant="techGlow" className="w-full">
               <Usb className="w-4 h-4 mr-2" />
-              Conectar Dispositivo
+              {t.serial.connect}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Puerto:</span>
+              <span className="text-muted-foreground">Port:</span>
               <span className="font-mono text-primary">{portName}</span>
             </div>
 
@@ -154,12 +156,12 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
               {!isScanning ? (
                 <Button onClick={handleStartScan} variant="success" className="flex-1">
                   <Play className="w-4 h-4 mr-2" />
-                  Iniciar Escaneo
+                  {t.serial.startScan}
                 </Button>
               ) : (
                 <Button onClick={handleStopScan} variant="warning" className="flex-1">
                   <Square className="w-4 h-4 mr-2" />
-                  Detener Escaneo
+                  {t.serial.stopScan}
                 </Button>
               )}
               <Button onClick={disconnect} variant="techOutline" size="icon">
@@ -171,7 +173,9 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
             {Object.keys(latestByChannel).length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Mediciones en Vivo</h4>
+                  <h4 className="text-sm font-medium">
+                    {language === "fr" ? "Mesures en Direct" : "Live Measurements"}
+                  </h4>
                   <Button
                     onClick={clearMeasurements}
                     variant="ghost"
@@ -179,7 +183,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
                     className="h-7 text-xs"
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
-                    Limpiar
+                    {language === "fr" ? "Effacer" : "Clear"}
                   </Button>
                 </div>
                 <ScrollArea className="h-48 rounded-lg border border-border/50 bg-background/50">
@@ -224,7 +228,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
                   </div>
                 </ScrollArea>
                 <p className="text-xs text-muted-foreground text-center">
-                  {measurements.length} mediciones registradas
+                  {measurements.length} {language === "fr" ? "mesures enregistrées" : "measurements recorded"}
                 </p>
               </div>
             )}
@@ -232,7 +236,9 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
             {isScanning && Object.keys(latestByChannel).length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <Activity className="w-8 h-8 animate-pulse text-primary mb-2" />
-                <p className="text-sm">Esperando datos del dispositivo...</p>
+                <p className="text-sm">
+                  {language === "fr" ? "En attente des données..." : "Waiting for device data..."}
+                </p>
               </div>
             )}
           </div>
