@@ -57,6 +57,27 @@ const translations = {
       notConnected: "NOT CONNECTED",
     },
   },
+  es: {
+    noInput: "Se requiere una imagen o mediciones de hardware",
+    rateLimitError: "Límite de solicitudes alcanzado. Intenta de nuevo en unos segundos.",
+    creditsError: "Créditos de IA agotados. Contacta al administrador.",
+    aiServiceError: "Error del servicio de IA",
+    noAIResponse: "Sin respuesta del modelo de IA",
+    parseError: "No se pudo analizar. Verifica los datos de entrada.",
+    serverError: "Error interno del servidor",
+    recommendations: ["Verifica la conexión del hardware", "Intenta con una imagen más clara", "Realiza nuevas mediciones"],
+    hardwareData: {
+      header: "=== DATOS DE MEDICIONES DE HARDWARE ===",
+      footer: "=== FIN DE DATOS DE HARDWARE ===",
+      voltage: "MEDICIONES DE VOLTAJE",
+      continuity: "PRUEBAS DE CONTINUIDAD",
+      resistance: "MEDICIONES DE RESISTENCIA",
+      signal: "ANÁLISIS DE SEÑALES",
+      channel: "Canal",
+      connected: "CONECTADO",
+      notConnected: "NO CONECTADO",
+    },
+  },
 };
 
 function formatMeasurementsForAI(measurements: MeasurementData[], lang: string): string {
@@ -106,49 +127,30 @@ function formatMeasurementsForAI(measurements: MeasurementData[], lang: string):
   return report;
 }
 
-const systemPrompts = {
-  fr: (analysisType: string, hasImage: boolean, hasMeasurements: boolean, measurementReport: string) => `Tu es un SYSTÈME EXPERT DE VISION PAR ORDINATEUR INDUSTRIEL spécialisé dans la détection d'objets sur cartes de circuits imprimés (PCB).
+function getSystemPrompt(lang: string, hasImage: boolean, hasMeasurements: boolean, hasReferenceImage: boolean): string {
+  const prompts = {
+    fr: `Tu es un SYSTÈME EXPERT DE VISION PAR ORDINATEUR INDUSTRIEL spécialisé dans la détection d'objets sur cartes de circuits imprimés (PCB).
 
-MODE D'OPÉRATION: Détection d'objets de précision industrielle style YOLO/Faster R-CNN avec coordonnées de bounding box normalisées.
-
-Tu vas effectuer une ${analysisType}.
+MODE D'OPÉRATION: Analyse multi-pasada avec détection YOLO haute précision et diagnostic approfondi.
 
 ${hasImage ? `=== PROTOCOLE DE DÉTECTION YOLO HAUTE PRÉCISION ===
 
 *** RÈGLE CRITIQUE: PRÉCISION DES BOUNDING BOXES ***
 Les bounding boxes DOIVENT être EXACTEMENT positionnées sur les composants.
-Une erreur de positionnement de plus de 5% est INACCEPTABLE.
 
-SYSTÈME DE COORDONNÉES (TRÈS IMPORTANT):
+SYSTÈME DE COORDONNÉES:
 - L'image entière va de (0.0, 0.0) en haut à gauche à (1.0, 1.0) en bas à droite
-- x = position horizontale du BORD GAUCHE du rectangle (pas le centre!)
-- y = position verticale du BORD SUPÉRIEUR du rectangle (pas le centre!)
+- x = position horizontale du BORD GAUCHE du rectangle
+- y = position verticale du BORD SUPÉRIEUR du rectangle
 - width = largeur du rectangle (proportion de l'image totale)
 - height = hauteur du rectangle (proportion de l'image totale)
 
-MÉTHODE DE CALCUL PRÉCIS (OBLIGATOIRE):
-1. Identifie visuellement les BORDS EXACTS du composant physique
-2. Pour le bord GAUCHE: mesure sa position depuis le bord gauche de l'image → c'est "x"
-3. Pour le bord SUPÉRIEUR: mesure sa position depuis le bord supérieur de l'image → c'est "y"
-4. Mesure la LARGEUR réelle du composant → c'est "width"
-5. Mesure la HAUTEUR réelle du composant → c'est "height"
-6. Ajoute une marge de 3-5% autour pour la visibilité
+GRILLE DE RÉFÉRENCE VISUELLE 10x10:
+- Coin supérieur gauche: x ≈ 0.0-0.1, y ≈ 0.0-0.1
+- Centre: x ≈ 0.4-0.6, y ≈ 0.4-0.6
+- Coin inférieur droit: x ≈ 0.8-0.95, y ≈ 0.8-0.95
 
-EXEMPLE CONCRET:
-Si un condensateur occupe:
-- Son bord gauche est à 25% de la largeur de l'image → x = 0.25
-- Son bord supérieur est à 40% de la hauteur de l'image → y = 0.40
-- Il fait 5% de la largeur de l'image → width = 0.05
-- Il fait 8% de la hauteur de l'image → height = 0.08
-Résultat: {"x": 0.250, "y": 0.400, "width": 0.050, "height": 0.080}
-
-GRILLE DE RÉFÉRENCE VISUELLE:
-Imagine l'image divisée en 10 colonnes et 10 lignes:
-- Un composant au coin supérieur gauche: x ≈ 0.05, y ≈ 0.05
-- Un composant au centre: x ≈ 0.45, y ≈ 0.45
-- Un composant au coin inférieur droit: x ≈ 0.80, y ≈ 0.80
-
-TAILLES TYPIQUES (RÉFÉRENCE):
+TAILLES TYPIQUES:
 | Composant                | width    | height   |
 |--------------------------|----------|----------|
 | Grand IC/Microcontrôleur | 0.10-0.20| 0.06-0.15|
@@ -156,123 +158,119 @@ TAILLES TYPIQUES (RÉFÉRENCE):
 | Condensateur électrolyt. | 0.02-0.05| 0.03-0.08|
 | Condensateur SMD         | 0.01-0.03| 0.01-0.02|
 | Résistance SMD           | 0.01-0.03| 0.008-0.02|
-| Connecteur               | 0.06-0.20| 0.03-0.10|
-| LED                      | 0.01-0.03| 0.01-0.03|
+| Connecteur               | 0.06-0.20| 0.03-0.10|` : ''}
 
-VALIDATION (VÉRIFIE AVANT CHAQUE RÉPONSE):
-✓ Le rectangle couvre-t-il visuellement le composant ENTIER?
-✓ Le rectangle n'est-il pas DÉCALÉ par rapport au composant?
-✓ x + width ≤ 1.0 (ne dépasse pas à droite)
-✓ y + height ≤ 1.0 (ne dépasse pas en bas)
-✓ Les coordonnées ont 3 décimales de précision
+${hasReferenceImage ? `=== MODE COMPARAISON AVEC RÉFÉRENCE ===
+Une image de référence (PCB en bon état) est fournie.
+Compare CHAQUE composant entre les deux images:
+- Identifie les différences de position, couleur, forme
+- Détecte les composants manquants ou ajoutés
+- Note les dégradations visibles par rapport à la référence` : ''}
 
-=== COMPOSANTS À DÉTECTER ===
+=== ANALYSE MULTI-PASADA ===
 
-OBLIGATOIRE - Identifie TOUS ces types s'ils sont présents:
-• Condensateurs électrolytiques (cylindriques, marquage +/-)
-• Condensateurs céramiques/SMD (rectangulaires petits)
-• Résistances SMD/traversantes
-• Circuits intégrés (rectangulaires, plusieurs pins)
-• Microcontrôleurs (grands ICs)
-• Connecteurs (USB, alimentation, headers)
-• Diodes, LEDs, Transistors
-• Cristaux/Oscillateurs
-• Régulateurs de tension
+PASADA 1 - DÉTECTION DES COMPOSANTS:
+Identifie TOUS les composants électroniques présents.
 
-=== DIAGNOSTIC DES DÉFAUTS ===
+PASADA 2 - DIAGNOSTIC APPROFONDI:
+Pour chaque composant, analyse en détail:
+- État physique (couleur, déformation, traces de brûlure)
+- Qualité des soudures
+- Alignement et positionnement
 
-ERREUR (status: "error"):
-🔴 Condensateur gonflé, composant brûlé, fuite d'électrolyte, pistes coupées
+PASADA 3 - ANALYSE DES SOUDURES:
+Détecte spécifiquement:
+🔴 Soudures froides (aspect terne, granuleux)
+🔴 Ponts de soudure (courts-circuits entre pads)
+🔴 Excès d'étain (boules, débordements)
+🔴 Manque d'étain (joints incomplets)
+🔴 Soulèvement de composant (tombstone)
 
-AVERTISSEMENT (status: "warning"):
-🟡 Décoloration, soudure terne, corrosion légère, composant décalé
+=== SYSTÈME DE SÉVÉRITÉ (1-10) ===
+Attribue un score de sévérité à chaque problème:
+- 1-3: Mineur (esthétique, fonctionnement non affecté)
+- 4-6: Modéré (peut affecter la fiabilité à long terme)
+- 7-8: Sérieux (risque de dysfonctionnement)
+- 9-10: Critique (panne imminente ou danger)
 
-OK (status: "ok"):
-🟢 Composant propre, soudures brillantes, bon alignement` : ''}
-
-${hasMeasurements ? `DONNÉES DE MESURES MATÉRIELLES:
-Ces mesures proviennent d'un microcontrôleur (Arduino/ESP32) connecté à la carte.
-
-INTERPRÉTATION:
-- Tensions: Valeurs normales typiques = 3.3V, 5V, 12V. Proche de 0V = problème.
-- Continuité: 1 = connecté, 0 = circuit ouvert/piste endommagée.
-- Résistance: Valeurs hors normes = composant endommagé.
-- Status "error" = valeur hors seuils normaux.
-- Status "warning" = valeur limite.` : ''}
-
-IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après.
-
-Structure JSON exacte requise:
+=== FORMAT DE RÉPONSE JSON ===
 {
-  "summary": "Résumé exécutif: X composants détectés, Y avec défauts, Z avec avertissements",
+  "summary": "Résumé exécutif",
   "overallStatus": "ok" | "warning" | "error",
-  "detectionMethod": "Scan systématique grille 8x8 avec calibration par points de repère",
+  "overallSeverity": 1-10,
+  "detectionMethod": "Analyse multi-pasada avec détection YOLO",
   "components": [
     {
-      "name": "Nom du composant (ex: Condensateur Électrolytique C1)",
-      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|led|regulator|other",
+      "name": "Nom du composant",
+      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|led|regulator|solder_joint|other",
       "status": "ok" | "warning" | "error",
-      "details": "Description précise de l'état observé",
-      "location": "Description de l'emplacement (ex: quadrant supérieur gauche, près du connecteur USB)",
-      "boundingBox": {
-        "x": 0.123,
-        "y": 0.456,
-        "width": 0.078,
-        "height": 0.045
-      },
-      "confidence": 0.95
+      "severity": 1-10,
+      "details": "Description détaillée",
+      "location": "Position sur la carte",
+      "boundingBox": {"x": 0.123, "y": 0.456, "width": 0.078, "height": 0.045},
+      "confidence": 0.95,
+      "solderQuality": "good" | "cold" | "bridge" | "excess" | "insufficient" | "lifted",
+      "repairDifficulty": "easy" | "medium" | "hard" | "expert",
+      "estimatedRepairTime": "5 min",
+      "replacementPart": "Référence du composant si à remplacer"
     }
   ],
-  "recommendations": ["Actions de réparation prioritaires"],
+  "solderAnalysis": {
+    "overallQuality": "good" | "fair" | "poor",
+    "coldJoints": 0,
+    "bridges": 0,
+    "excessSolder": 0,
+    "insufficientSolder": 0,
+    "liftedComponents": 0
+  },
+  "recommendations": ["Actions prioritaires"],
+  "repairGuide": [
+    {
+      "step": 1,
+      "action": "Description de l'action",
+      "component": "Composant concerné",
+      "tools": ["Outils nécessaires"],
+      "difficulty": "easy" | "medium" | "hard",
+      "estimatedTime": "5 min",
+      "tips": "Conseils pratiques"
+    }
+  ],
+  "partsToReplace": [
+    {
+      "component": "Nom",
+      "reference": "Référence fabricant",
+      "quantity": 1,
+      "reason": "Raison du remplacement"
+    }
+  ],
   "analysisQuality": "high|medium|low"
 }
 
-${hasMeasurements ? `DONNÉES MATÉRIELLES À ANALYSER:${measurementReport}` : ''}
-
+RÉPONDS UNIQUEMENT avec le JSON, sans texte avant ou après.
 RÉPONDS EN FRANÇAIS.`,
 
-  en: (analysisType: string, hasImage: boolean, hasMeasurements: boolean, measurementReport: string) => `You are an INDUSTRIAL COMPUTER VISION EXPERT SYSTEM specialized in object detection on printed circuit boards (PCB).
+    en: `You are an INDUSTRIAL COMPUTER VISION EXPERT SYSTEM specialized in object detection on printed circuit boards (PCB).
 
-OPERATION MODE: Industrial precision object detection YOLO/Faster R-CNN style with normalized bounding box coordinates.
-
-You will perform a ${analysisType}.
+OPERATION MODE: Multi-pass analysis with high precision YOLO detection and in-depth diagnostics.
 
 ${hasImage ? `=== HIGH PRECISION YOLO DETECTION PROTOCOL ===
 
 *** CRITICAL RULE: BOUNDING BOX PRECISION ***
 Bounding boxes MUST be EXACTLY positioned over components.
-A positioning error greater than 5% is UNACCEPTABLE.
 
-COORDINATE SYSTEM (VERY IMPORTANT):
+COORDINATE SYSTEM:
 - The entire image goes from (0.0, 0.0) at top-left to (1.0, 1.0) at bottom-right
-- x = horizontal position of the LEFT EDGE of the rectangle (not the center!)
-- y = vertical position of the TOP EDGE of the rectangle (not the center!)
+- x = horizontal position of the LEFT EDGE of the rectangle
+- y = vertical position of the TOP EDGE of the rectangle
 - width = rectangle width (proportion of total image)
 - height = rectangle height (proportion of total image)
 
-PRECISE CALCULATION METHOD (MANDATORY):
-1. Visually identify the EXACT EDGES of the physical component
-2. For the LEFT edge: measure its position from the image's left edge → this is "x"
-3. For the TOP edge: measure its position from the image's top edge → this is "y"
-4. Measure the component's actual WIDTH → this is "width"
-5. Measure the component's actual HEIGHT → this is "height"
-6. Add a 3-5% margin around for visibility
+VISUAL REFERENCE GRID 10x10:
+- Top-left corner: x ≈ 0.0-0.1, y ≈ 0.0-0.1
+- Center: x ≈ 0.4-0.6, y ≈ 0.4-0.6
+- Bottom-right corner: x ≈ 0.8-0.95, y ≈ 0.8-0.95
 
-CONCRETE EXAMPLE:
-If a capacitor occupies:
-- Its left edge is at 25% of image width → x = 0.25
-- Its top edge is at 40% of image height → y = 0.40
-- It's 5% of image width → width = 0.05
-- It's 8% of image height → height = 0.08
-Result: {"x": 0.250, "y": 0.400, "width": 0.050, "height": 0.080}
-
-VISUAL REFERENCE GRID:
-Imagine the image divided into 10 columns and 10 rows:
-- A component at top-left corner: x ≈ 0.05, y ≈ 0.05
-- A component at center: x ≈ 0.45, y ≈ 0.45
-- A component at bottom-right corner: x ≈ 0.80, y ≈ 0.80
-
-TYPICAL SIZES (REFERENCE):
+TYPICAL SIZES:
 | Component              | width    | height   |
 |------------------------|----------|----------|
 | Large IC/Microcontroller| 0.10-0.20| 0.06-0.15|
@@ -280,81 +278,220 @@ TYPICAL SIZES (REFERENCE):
 | Electrolytic capacitor | 0.02-0.05| 0.03-0.08|
 | SMD capacitor          | 0.01-0.03| 0.01-0.02|
 | SMD resistor           | 0.01-0.03| 0.008-0.02|
-| Connector              | 0.06-0.20| 0.03-0.10|
-| LED                    | 0.01-0.03| 0.01-0.03|
+| Connector              | 0.06-0.20| 0.03-0.10|` : ''}
 
-VALIDATION (CHECK BEFORE EACH RESPONSE):
-✓ Does the rectangle visually cover the ENTIRE component?
-✓ Is the rectangle NOT OFFSET from the component?
-✓ x + width ≤ 1.0 (doesn't exceed right edge)
-✓ y + height ≤ 1.0 (doesn't exceed bottom edge)
-✓ Coordinates have 3 decimal precision
+${hasReferenceImage ? `=== REFERENCE COMPARISON MODE ===
+A reference image (good PCB) is provided.
+Compare EACH component between the two images:
+- Identify differences in position, color, shape
+- Detect missing or added components
+- Note visible degradation compared to reference` : ''}
 
-=== COMPONENTS TO DETECT ===
+=== MULTI-PASS ANALYSIS ===
 
-MANDATORY - Identify ALL these types if present:
-• Electrolytic capacitors (cylindrical, +/- marking)
-• Ceramic/SMD capacitors (small rectangular)
-• SMD/through-hole resistors
-• Integrated circuits (rectangular, multiple pins)
-• Microcontrollers (large ICs)
-• Connectors (USB, power, headers)
-• Diodes, LEDs, Transistors
-• Crystals/Oscillators
-• Voltage regulators
+PASS 1 - COMPONENT DETECTION:
+Identify ALL electronic components present.
 
-=== FAULT DIAGNOSIS ===
+PASS 2 - IN-DEPTH DIAGNOSTICS:
+For each component, analyze in detail:
+- Physical state (color, deformation, burn marks)
+- Solder quality
+- Alignment and positioning
 
-ERROR (status: "error"):
-🔴 Bulging capacitor, burnt component, electrolyte leakage, cut traces
+PASS 3 - SOLDER ANALYSIS:
+Specifically detect:
+🔴 Cold solder joints (dull, grainy appearance)
+🔴 Solder bridges (short circuits between pads)
+🔴 Excess solder (balls, overflow)
+🔴 Insufficient solder (incomplete joints)
+🔴 Component lifting (tombstone)
 
-WARNING (status: "warning"):
-🟡 Discoloration, dull solder, light corrosion, misaligned component
+=== SEVERITY SYSTEM (1-10) ===
+Assign a severity score to each problem:
+- 1-3: Minor (cosmetic, function not affected)
+- 4-6: Moderate (may affect long-term reliability)
+- 7-8: Serious (risk of malfunction)
+- 9-10: Critical (imminent failure or danger)
 
-OK (status: "ok"):
-🟢 Clean component, shiny solder joints, good alignment` : ''}
-
-${hasMeasurements ? `HARDWARE MEASUREMENT DATA:
-These measurements come from a microcontroller (Arduino/ESP32) connected to the board.
-
-INTERPRETATION:
-- Voltages: Typical normal values = 3.3V, 5V, 12V. Close to 0V = problem.
-- Continuity: 1 = connected, 0 = open circuit/damaged trace.
-- Resistance: Out of spec values = damaged component.
-- Status "error" = value outside normal thresholds.
-- Status "warning" = borderline value.` : ''}
-
-IMPORTANT: Respond ONLY with a valid JSON object, no text before or after.
-
-Exact required JSON structure:
+=== JSON RESPONSE FORMAT ===
 {
-  "summary": "Executive summary: X components detected, Y with faults, Z with warnings",
+  "summary": "Executive summary",
   "overallStatus": "ok" | "warning" | "error",
-  "detectionMethod": "Systematic 8x8 grid scan with reference point calibration",
+  "overallSeverity": 1-10,
+  "detectionMethod": "Multi-pass analysis with YOLO detection",
   "components": [
     {
-      "name": "Component name (e.g., Electrolytic Capacitor C1)",
-      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|led|regulator|other",
+      "name": "Component name",
+      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|led|regulator|solder_joint|other",
       "status": "ok" | "warning" | "error",
-      "details": "Precise description of observed state",
-      "location": "Location description (e.g., upper left quadrant, near USB connector)",
-      "boundingBox": {
-        "x": 0.123,
-        "y": 0.456,
-        "width": 0.078,
-        "height": 0.045
-      },
-      "confidence": 0.95
+      "severity": 1-10,
+      "details": "Detailed description",
+      "location": "Position on board",
+      "boundingBox": {"x": 0.123, "y": 0.456, "width": 0.078, "height": 0.045},
+      "confidence": 0.95,
+      "solderQuality": "good" | "cold" | "bridge" | "excess" | "insufficient" | "lifted",
+      "repairDifficulty": "easy" | "medium" | "hard" | "expert",
+      "estimatedRepairTime": "5 min",
+      "replacementPart": "Component reference if replacement needed"
     }
   ],
-  "recommendations": ["Priority repair actions"],
+  "solderAnalysis": {
+    "overallQuality": "good" | "fair" | "poor",
+    "coldJoints": 0,
+    "bridges": 0,
+    "excessSolder": 0,
+    "insufficientSolder": 0,
+    "liftedComponents": 0
+  },
+  "recommendations": ["Priority actions"],
+  "repairGuide": [
+    {
+      "step": 1,
+      "action": "Action description",
+      "component": "Related component",
+      "tools": ["Required tools"],
+      "difficulty": "easy" | "medium" | "hard",
+      "estimatedTime": "5 min",
+      "tips": "Practical tips"
+    }
+  ],
+  "partsToReplace": [
+    {
+      "component": "Name",
+      "reference": "Manufacturer reference",
+      "quantity": 1,
+      "reason": "Reason for replacement"
+    }
+  ],
   "analysisQuality": "high|medium|low"
 }
 
-${hasMeasurements ? `HARDWARE DATA TO ANALYZE:${measurementReport}` : ''}
-
+RESPOND ONLY with JSON, no text before or after.
 RESPOND IN ENGLISH.`,
-};
+
+    es: `Eres un SISTEMA EXPERTO DE VISIÓN POR COMPUTADORA INDUSTRIAL especializado en detección de objetos en placas de circuito impreso (PCB).
+
+MODO DE OPERACIÓN: Análisis multi-pasada con detección YOLO de alta precisión y diagnóstico profundo.
+
+${hasImage ? `=== PROTOCOLO DE DETECCIÓN YOLO ALTA PRECISIÓN ===
+
+*** REGLA CRÍTICA: PRECISIÓN DE BOUNDING BOXES ***
+Los bounding boxes DEBEN estar EXACTAMENTE posicionados sobre los componentes.
+
+SISTEMA DE COORDENADAS:
+- La imagen completa va de (0.0, 0.0) arriba-izquierda a (1.0, 1.0) abajo-derecha
+- x = posición horizontal del BORDE IZQUIERDO del rectángulo
+- y = posición vertical del BORDE SUPERIOR del rectángulo
+- width = ancho del rectángulo (proporción de la imagen total)
+- height = altura del rectángulo (proporción de la imagen total)
+
+GRILLA DE REFERENCIA VISUAL 10x10:
+- Esquina superior izquierda: x ≈ 0.0-0.1, y ≈ 0.0-0.1
+- Centro: x ≈ 0.4-0.6, y ≈ 0.4-0.6
+- Esquina inferior derecha: x ≈ 0.8-0.95, y ≈ 0.8-0.95
+
+TAMAÑOS TÍPICOS:
+| Componente               | width    | height   |
+|--------------------------|----------|----------|
+| IC Grande/Microcontrolador| 0.10-0.20| 0.06-0.15|
+| IC mediano               | 0.05-0.10| 0.03-0.07|
+| Condensador electrolítico| 0.02-0.05| 0.03-0.08|
+| Condensador SMD          | 0.01-0.03| 0.01-0.02|
+| Resistencia SMD          | 0.01-0.03| 0.008-0.02|
+| Conector                 | 0.06-0.20| 0.03-0.10|` : ''}
+
+${hasReferenceImage ? `=== MODO COMPARACIÓN CON REFERENCIA ===
+Se proporciona una imagen de referencia (PCB en buen estado).
+Compara CADA componente entre las dos imágenes:
+- Identifica diferencias de posición, color, forma
+- Detecta componentes faltantes o agregados
+- Nota degradaciones visibles respecto a la referencia` : ''}
+
+=== ANÁLISIS MULTI-PASADA ===
+
+PASADA 1 - DETECCIÓN DE COMPONENTES:
+Identifica TODOS los componentes electrónicos presentes.
+
+PASADA 2 - DIAGNÓSTICO PROFUNDO:
+Para cada componente, analiza en detalle:
+- Estado físico (color, deformación, marcas de quemadura)
+- Calidad de soldaduras
+- Alineación y posicionamiento
+
+PASADA 3 - ANÁLISIS DE SOLDADURAS:
+Detecta específicamente:
+🔴 Soldaduras frías (aspecto opaco, granuloso)
+🔴 Puentes de soldadura (cortocircuitos entre pads)
+🔴 Exceso de estaño (bolas, desbordamientos)
+🔴 Falta de estaño (uniones incompletas)
+🔴 Levantamiento de componente (tombstone)
+
+=== SISTEMA DE SEVERIDAD (1-10) ===
+Asigna un puntaje de severidad a cada problema:
+- 1-3: Menor (estético, funcionamiento no afectado)
+- 4-6: Moderado (puede afectar confiabilidad a largo plazo)
+- 7-8: Serio (riesgo de mal funcionamiento)
+- 9-10: Crítico (falla inminente o peligro)
+
+=== FORMATO DE RESPUESTA JSON ===
+{
+  "summary": "Resumen ejecutivo",
+  "overallStatus": "ok" | "warning" | "error",
+  "overallSeverity": 1-10,
+  "detectionMethod": "Análisis multi-pasada con detección YOLO",
+  "components": [
+    {
+      "name": "Nombre del componente",
+      "type": "capacitor|resistor|ic|connector|inductor|diode|transistor|crystal|fuse|led|regulator|solder_joint|other",
+      "status": "ok" | "warning" | "error",
+      "severity": 1-10,
+      "details": "Descripción detallada",
+      "location": "Posición en la placa",
+      "boundingBox": {"x": 0.123, "y": 0.456, "width": 0.078, "height": 0.045},
+      "confidence": 0.95,
+      "solderQuality": "good" | "cold" | "bridge" | "excess" | "insufficient" | "lifted",
+      "repairDifficulty": "easy" | "medium" | "hard" | "expert",
+      "estimatedRepairTime": "5 min",
+      "replacementPart": "Referencia del componente si necesita reemplazo"
+    }
+  ],
+  "solderAnalysis": {
+    "overallQuality": "good" | "fair" | "poor",
+    "coldJoints": 0,
+    "bridges": 0,
+    "excessSolder": 0,
+    "insufficientSolder": 0,
+    "liftedComponents": 0
+  },
+  "recommendations": ["Acciones prioritarias"],
+  "repairGuide": [
+    {
+      "step": 1,
+      "action": "Descripción de la acción",
+      "component": "Componente relacionado",
+      "tools": ["Herramientas necesarias"],
+      "difficulty": "easy" | "medium" | "hard",
+      "estimatedTime": "5 min",
+      "tips": "Consejos prácticos"
+    }
+  ],
+  "partsToReplace": [
+    {
+      "component": "Nombre",
+      "reference": "Referencia del fabricante",
+      "quantity": 1,
+      "reason": "Razón del reemplazo"
+    }
+  ],
+  "analysisQuality": "high|medium|low"
+}
+
+RESPONDE ÚNICAMENTE con el JSON, sin texto antes o después.
+RESPONDE EN ESPAÑOL.`
+  };
+
+  return prompts[lang as keyof typeof prompts] || prompts.fr;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -362,7 +499,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image, measurements, language = "fr" } = await req.json();
+    const { image, referenceImage, measurements, language = "fr" } = await req.json();
     const t = translations[language as keyof typeof translations] || translations.fr;
 
     if (!image && (!measurements || measurements.length === 0)) {
@@ -378,34 +515,11 @@ serve(async (req) => {
     }
 
     const hasImage = !!image;
+    const hasReferenceImage = !!referenceImage;
     const hasMeasurements = measurements && measurements.length > 0;
     const measurementReport = hasMeasurements ? formatMeasurementsForAI(measurements, language) : "";
 
-    const analysisTypes = {
-      fr: {
-        combined: "analyse combinée image + mesures matérielles",
-        visual: "analyse visuelle avec détection de composants",
-        hardware: "analyse des données matérielles",
-      },
-      en: {
-        combined: "combined image + hardware measurements analysis",
-        visual: "visual analysis with component detection",
-        hardware: "hardware data analysis",
-      },
-    };
-    
-    const types = analysisTypes[language as keyof typeof analysisTypes] || analysisTypes.fr;
-    let analysisType = "";
-    if (hasImage && hasMeasurements) {
-      analysisType = types.combined;
-    } else if (hasImage) {
-      analysisType = types.visual;
-    } else {
-      analysisType = types.hardware;
-    }
-
-    const getSystemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.fr;
-    const systemPrompt = getSystemPrompt(analysisType, hasImage, hasMeasurements, measurementReport);
+    const systemPrompt = getSystemPrompt(language, hasImage, hasMeasurements, hasReferenceImage);
 
     const userContent: Array<{type: string; text?: string; image_url?: {url: string}}> = [];
 
@@ -418,83 +532,93 @@ serve(async (req) => {
       });
     }
 
-    const userInstructions = {
-      fr: {
-        imageOnly: `INSTRUCTION DE DÉTECTION PRÉCISE:
-
-1. CALIBRATION: Identifie les coins de la PCB et les points de repère majeurs.
-
-2. SCAN SYSTÉMATIQUE: Utilise la méthode grille 8x8 pour couvrir TOUTE l'image.
-
-3. POUR CHAQUE COMPOSANT:
-   - Localise son centre exact dans l'image
-   - Calcule le bounding box avec 3 décimales de précision
-   - Évalue son état visuel (soudures, couleur, alignement)
-   - Assigne un niveau de confiance réaliste (0.7-0.99)
-
-4. VÉRIFICATION: Un composant en haut à gauche doit avoir x≈0.0-0.2, y≈0.0-0.2
-
-5. Réponds UNIQUEMENT avec le JSON structuré.`,
-        hardwareOnly: "Analyse les données de mesures matérielles et fournis un diagnostic détaillé au format JSON.",
-        combined: `INSTRUCTION D'ANALYSE COMBINÉE:
-
-1. Scanne l'image systématiquement avec la méthode grille 8x8.
-
-2. Détecte TOUS les composants avec bounding boxes précis (3 décimales).
-
-3. Corrèle les mesures matérielles avec les composants détectés visuellement.
-
-4. Pour les composants avec mesures anormales, augmente la sévérité du diagnostic.
-
-5. Réponds UNIQUEMENT avec le JSON structuré.`,
-      },
-      en: {
-        imageOnly: `PRECISE DETECTION INSTRUCTION:
-
-1. CALIBRATION: Identify PCB corners and major reference points.
-
-2. SYSTEMATIC SCAN: Use 8x8 grid method to cover the ENTIRE image.
-
-3. FOR EACH COMPONENT:
-   - Locate its exact center in the image
-   - Calculate bounding box with 3 decimal precision
-   - Evaluate visual state (solder joints, color, alignment)
-   - Assign realistic confidence level (0.7-0.99)
-
-4. VERIFICATION: A component in top-left should have x≈0.0-0.2, y≈0.0-0.2
-
-5. Respond ONLY with structured JSON.`,
-        hardwareOnly: "Analyze the hardware measurement data and provide a detailed diagnosis in JSON format.",
-        combined: `COMBINED ANALYSIS INSTRUCTION:
-
-1. Systematically scan the image using 8x8 grid method.
-
-2. Detect ALL components with precise bounding boxes (3 decimals).
-
-3. Correlate hardware measurements with visually detected components.
-
-4. For components with abnormal measurements, increase diagnostic severity.
-
-5. Respond ONLY with structured JSON.`,
-      },
-    };
-
-    const instructions = userInstructions[language as keyof typeof userInstructions] || userInstructions.fr;
-    let userText = "";
-    if (hasImage && hasMeasurements) {
-      userText = instructions.combined;
-    } else if (hasImage) {
-      userText = instructions.imageOnly;
-    } else {
-      userText = instructions.hardwareOnly;
+    if (hasReferenceImage) {
+      userContent.push({
+        type: "text",
+        text: "IMAGEN DE REFERENCIA (PCB en buen estado):",
+      });
+      userContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/jpeg;base64,${referenceImage}`,
+        },
+      });
     }
+
+    const userInstructions: Record<string, string> = {
+      fr: `INSTRUCTION D'ANALYSE MULTI-PASADA:
+
+1. PASADA 1 - Scanne l'image systématiquement avec la méthode grille 10x10.
+   Détecte TOUS les composants avec bounding boxes précis (3 décimales).
+
+2. PASADA 2 - Pour chaque composant détecté:
+   - Évalue son état physique en détail
+   - Attribue un score de sévérité de 1 à 10
+   - Détermine la difficulté de réparation
+
+3. PASADA 3 - Analyse spécifique des soudures:
+   - Identifie tous les défauts de soudure
+   - Compte les différents types de problèmes
+
+4. Génère le guide de réparation étape par étape.
+
+5. Liste les composants à remplacer avec leurs références.
+
+${hasMeasurements ? `\nDONNÉES MATÉRIELLES À ANALYSER:${measurementReport}` : ''}
+
+Réponds UNIQUEMENT avec le JSON structuré.`,
+
+      en: `MULTI-PASS ANALYSIS INSTRUCTION:
+
+1. PASS 1 - Systematically scan the image using 10x10 grid method.
+   Detect ALL components with precise bounding boxes (3 decimals).
+
+2. PASS 2 - For each detected component:
+   - Evaluate its physical state in detail
+   - Assign a severity score from 1 to 10
+   - Determine repair difficulty
+
+3. PASS 3 - Specific solder analysis:
+   - Identify all solder defects
+   - Count different types of problems
+
+4. Generate step-by-step repair guide.
+
+5. List components to replace with their references.
+
+${hasMeasurements ? `\nHARDWARE DATA TO ANALYZE:${measurementReport}` : ''}
+
+Respond ONLY with structured JSON.`,
+
+      es: `INSTRUCCIÓN DE ANÁLISIS MULTI-PASADA:
+
+1. PASADA 1 - Escanea la imagen sistemáticamente usando el método de grilla 10x10.
+   Detecta TODOS los componentes con bounding boxes precisos (3 decimales).
+
+2. PASADA 2 - Para cada componente detectado:
+   - Evalúa su estado físico en detalle
+   - Asigna un puntaje de severidad de 1 a 10
+   - Determina la dificultad de reparación
+
+3. PASADA 3 - Análisis específico de soldaduras:
+   - Identifica todos los defectos de soldadura
+   - Cuenta los diferentes tipos de problemas
+
+4. Genera la guía de reparación paso a paso.
+
+5. Lista los componentes a reemplazar con sus referencias.
+
+${hasMeasurements ? `\nDATOS DE HARDWARE A ANALIZAR:${measurementReport}` : ''}
+
+Responde ÚNICAMENTE con el JSON estructurado.`
+    };
 
     userContent.push({
       type: "text",
-      text: userText,
+      text: userInstructions[language] || userInstructions.fr,
     });
 
-    console.log(`Sending request to AI gateway [${language}] with enhanced detection prompt...`);
+    console.log(`Sending request to AI gateway [${language}] with multi-pass analysis...`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -511,7 +635,7 @@ serve(async (req) => {
             content: userContent,
           },
         ],
-        temperature: 0.05, // Very low for maximum precision and consistency
+        temperature: 0.05,
       }),
     });
 
@@ -540,7 +664,7 @@ serve(async (req) => {
       throw new Error(t.noAIResponse);
     }
 
-    // Parse the JSON response, handling potential markdown code blocks
+    // Parse the JSON response
     let diagnosticData;
     try {
       let jsonString = content.trim();
@@ -558,13 +682,11 @@ serve(async (req) => {
       if (diagnosticData.components) {
         diagnosticData.components = diagnosticData.components.map((c: any) => {
           if (c.boundingBox) {
-            // Ensure all values are valid numbers
             const x = Math.max(0, Math.min(0.95, parseFloat(c.boundingBox.x) || 0));
             const y = Math.max(0, Math.min(0.95, parseFloat(c.boundingBox.y) || 0));
             let width = Math.max(0.01, Math.min(0.4, parseFloat(c.boundingBox.width) || 0.05));
             let height = Math.max(0.01, Math.min(0.4, parseFloat(c.boundingBox.height) || 0.05));
             
-            // Ensure box stays within bounds
             if (x + width > 1.0) width = 1.0 - x;
             if (y + height > 1.0) height = 1.0 - y;
             
@@ -576,21 +698,42 @@ serve(async (req) => {
             };
           }
           
-          // Ensure confidence is valid
           if (c.confidence !== undefined) {
             c.confidence = Math.max(0.5, Math.min(0.99, parseFloat(c.confidence) || 0.8));
+          }
+
+          // Ensure severity is valid
+          if (c.severity !== undefined) {
+            c.severity = Math.max(1, Math.min(10, parseInt(c.severity) || 5));
           }
           
           return c;
         });
       }
+
+      // Ensure overall severity is valid
+      if (diagnosticData.overallSeverity !== undefined) {
+        diagnosticData.overallSeverity = Math.max(1, Math.min(10, parseInt(diagnosticData.overallSeverity) || 5));
+      }
+
     } catch (parseError) {
       console.error("Error parsing AI response:", content);
       diagnosticData = {
         summary: t.parseError,
         overallStatus: "warning",
+        overallSeverity: 5,
         components: [],
         recommendations: t.recommendations,
+        solderAnalysis: {
+          overallQuality: "fair",
+          coldJoints: 0,
+          bridges: 0,
+          excessSolder: 0,
+          insufficientSolder: 0,
+          liftedComponents: 0
+        },
+        repairGuide: [],
+        partsToReplace: []
       };
     }
 
