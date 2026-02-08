@@ -97,6 +97,32 @@ serve(async (req) => {
 
     const systemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.fr;
 
+    // Build messages with image support
+    const formattedMessages = messages.map((msg: { role: string; content: string; image?: string }) => {
+      if (msg.image) {
+        // Multimodal message with image
+        return {
+          role: msg.role,
+          content: [
+            {
+              type: "image_url",
+              image_url: {
+                url: msg.image,
+              },
+            },
+            {
+              type: "text",
+              text: msg.content || "Analysez cette image de carte électronique.",
+            },
+          ],
+        };
+      }
+      return {
+        role: msg.role,
+        content: msg.content,
+      };
+    });
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -107,10 +133,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages.map((msg: { role: string; content: string }) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
+          ...formattedMessages,
         ],
         stream: true,
         temperature: 0.7,
