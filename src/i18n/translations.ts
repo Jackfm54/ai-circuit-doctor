@@ -126,6 +126,11 @@ export const translations = {
       removeImage: "Supprimer l'image",
       error: "Erreur",
       errorMessage: "Impossible d'envoyer le message",
+      generateDiagram: "Générer schéma",
+      generateDiagramRequest: "Génère le schéma électronique de cette carte",
+      generatingDiagram: "Génération du schéma électronique en cours...",
+      diagramGenerated: "Voici le schéma électronique généré à partir de l'image.",
+      downloadDiagram: "Télécharger le schéma",
     },
     // Serial Connection
     serial: {
@@ -291,6 +296,11 @@ export const translations = {
       removeImage: "Remove image",
       error: "Error",
       errorMessage: "Could not send message",
+      generateDiagram: "Generate schematic",
+      generateDiagramRequest: "Generate the electronic schematic of this board",
+      generatingDiagram: "Generating electronic schematic...",
+      diagramGenerated: "Here is the electronic schematic generated from the image.",
+      downloadDiagram: "Download schematic",
     },
     // Serial Connection
     serial: {
