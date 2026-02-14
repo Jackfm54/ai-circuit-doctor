@@ -82,33 +82,128 @@ IMPORTANT:
 ALWAYS RESPOND IN ENGLISH.`,
 };
 
+const diagramPrompts = {
+  fr: `Analyse cette image d'une carte électronique (PCB) et génère un schéma électronique clair et professionnel qui représente le circuit visible. 
+Le schéma doit :
+- Utiliser des symboles électroniques standards (résistances, condensateurs, circuits intégrés, connecteurs, etc.)
+- Montrer les connexions entre les composants tels qu'ils apparaissent sur le PCB
+- Inclure les valeurs des composants si elles sont lisibles sur l'image
+- Être propre, bien organisé et facile à lire
+- Utiliser un fond blanc avec des lignes noires claires
+- Inclure les labels/références des composants (R1, C1, U1, etc.)
+Style: Schéma électronique technique professionnel, noir et blanc, haute résolution.`,
+
+  en: `Analyze this image of an electronic board (PCB) and generate a clear, professional electronic schematic diagram representing the visible circuit.
+The schematic should:
+- Use standard electronic symbols (resistors, capacitors, integrated circuits, connectors, etc.)
+- Show connections between components as they appear on the PCB
+- Include component values if readable from the image
+- Be clean, well-organized, and easy to read
+- Use a white background with clear black lines
+- Include component labels/references (R1, C1, U1, etc.)
+Style: Professional technical electronic schematic, black and white, high resolution.`,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, language = "fr" } = await req.json();
+    const { messages, language = "fr", mode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // === DIAGRAM GENERATION MODE ===
+    if (mode === "generate_diagram") {
+      const lastMessage = messages[messages.length - 1];
+      const imageUrl = lastMessage?.image;
+
+      if (!imageUrl) {
+        return new Response(
+          JSON.stringify({ error: language === "fr" ? "Image requise pour générer un diagramme" : "Image required to generate a diagram" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const diagramPrompt = diagramPrompts[language as keyof typeof diagramPrompts] || diagramPrompts.fr;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: { url: imageUrl },
+                },
+                {
+                  type: "text",
+                  text: diagramPrompt,
+                },
+              ],
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ error: language === "fr" ? "Limite de requêtes dépassée. Réessayez plus tard." : "Rate limit exceeded. Please try again later." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ error: language === "fr" ? "Crédits requis pour continuer." : "Credits required to continue." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const errorText = await response.text();
+        console.error("AI gateway error (diagram):", response.status, errorText);
+        return new Response(
+          JSON.stringify({ error: language === "fr" ? "Erreur lors de la génération du diagramme" : "Error generating diagram" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.choices?.[0]?.message;
+      const generatedImage = assistantMessage?.images?.[0]?.image_url?.url;
+      const textContent = assistantMessage?.content || "";
+
+      return new Response(
+        JSON.stringify({
+          diagram: generatedImage || null,
+          description: textContent,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // === NORMAL CHAT MODE ===
     const systemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.fr;
 
-    // Build messages with image support
     const formattedMessages = messages.map((msg: { role: string; content: string; image?: string }) => {
       if (msg.image) {
-        // Multimodal message with image
         return {
           role: msg.role,
           content: [
             {
               type: "image_url",
-              image_url: {
-                url: msg.image,
-              },
+              image_url: { url: msg.image },
             },
             {
               type: "text",
