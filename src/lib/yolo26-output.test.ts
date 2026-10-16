@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, it } from "bun:test";
 import { decodeYolo26 } from "./yolo26-output";
 
