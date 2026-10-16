@@ -1,3 +1,4 @@
+import { imageDataUrl, normalizeDiagnostic } from "./validation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -131,9 +132,9 @@ function getSystemPrompt(lang: string, hasImage: boolean, hasMeasurements: boole
   const prompts = {
     fr: `Tu es un SYSTÈME EXPERT DE VISION PAR ORDINATEUR INDUSTRIEL spécialisé dans la détection d'objets sur cartes de circuits imprimés (PCB).
 
-MODE D'OPÉRATION: Analyse multi-pasada avec détection YOLO haute précision et diagnostic approfondi.
+MODE D'OPÉRATION: Analyse multi-pasada avec inspection visuelle IA haute précision et diagnostic approfondi.
 
-${hasImage ? `=== PROTOCOLE DE DÉTECTION YOLO HAUTE PRÉCISION ===
+${hasImage ? `=== PROTOCOLE DE DÉTECTION VISUAL HAUTE PRÉCISION ===
 
 *** RÈGLE CRITIQUE: PRÉCISION DES BOUNDING BOXES ***
 Les bounding boxes DOIVENT être EXACTEMENT positionnées sur les composants.
@@ -150,15 +151,7 @@ GRILLE DE RÉFÉRENCE VISUELLE 10x10:
 - Centre: x ≈ 0.4-0.6, y ≈ 0.4-0.6
 - Coin inférieur droit: x ≈ 0.8-0.95, y ≈ 0.8-0.95
 
-TAILLES TYPIQUES:
-| Composant                | width    | height   |
-|--------------------------|----------|----------|
-| Grand IC/Microcontrôleur | 0.10-0.20| 0.06-0.15|
-| IC moyen                 | 0.05-0.10| 0.03-0.07|
-| Condensateur électrolyt. | 0.02-0.05| 0.03-0.08|
-| Condensateur SMD         | 0.01-0.03| 0.01-0.02|
-| Résistance SMD           | 0.01-0.03| 0.008-0.02|
-| Connecteur               | 0.06-0.20| 0.03-0.10|` : ''}
+` : ''}
 
 ${hasReferenceImage ? `=== MODE COMPARAISON AVEC RÉFÉRENCE ===
 Une image de référence (PCB en bon état) est fournie.
@@ -198,7 +191,7 @@ Attribue un score de sévérité à chaque problème:
   "summary": "Résumé exécutif",
   "overallStatus": "ok" | "warning" | "error",
   "overallSeverity": 1-10,
-  "detectionMethod": "Analyse multi-pasada avec détection YOLO",
+  "detectionMethod": "Analyse multi-pasada avec inspection visuelle IA",
   "components": [
     {
       "name": "Nom du composant",
@@ -251,9 +244,9 @@ RÉPONDS EN FRANÇAIS.`,
 
     en: `You are an INDUSTRIAL COMPUTER VISION EXPERT SYSTEM specialized in object detection on printed circuit boards (PCB).
 
-OPERATION MODE: Multi-pass analysis with high precision YOLO detection and in-depth diagnostics.
+OPERATION MODE: Multi-pass analysis with high precision AI visual inspection and in-depth diagnostics.
 
-${hasImage ? `=== HIGH PRECISION YOLO DETECTION PROTOCOL ===
+${hasImage ? `=== HIGH PRECISION VISUAL DETECTION PROTOCOL ===
 
 *** CRITICAL RULE: BOUNDING BOX PRECISION ***
 Bounding boxes MUST be EXACTLY positioned over components.
@@ -270,15 +263,7 @@ VISUAL REFERENCE GRID 10x10:
 - Center: x ≈ 0.4-0.6, y ≈ 0.4-0.6
 - Bottom-right corner: x ≈ 0.8-0.95, y ≈ 0.8-0.95
 
-TYPICAL SIZES:
-| Component              | width    | height   |
-|------------------------|----------|----------|
-| Large IC/Microcontroller| 0.10-0.20| 0.06-0.15|
-| Medium IC              | 0.05-0.10| 0.03-0.07|
-| Electrolytic capacitor | 0.02-0.05| 0.03-0.08|
-| SMD capacitor          | 0.01-0.03| 0.01-0.02|
-| SMD resistor           | 0.01-0.03| 0.008-0.02|
-| Connector              | 0.06-0.20| 0.03-0.10|` : ''}
+` : ''}
 
 ${hasReferenceImage ? `=== REFERENCE COMPARISON MODE ===
 A reference image (good PCB) is provided.
@@ -318,7 +303,7 @@ Assign a severity score to each problem:
   "summary": "Executive summary",
   "overallStatus": "ok" | "warning" | "error",
   "overallSeverity": 1-10,
-  "detectionMethod": "Multi-pass analysis with YOLO detection",
+  "detectionMethod": "Multi-pass analysis with AI visual inspection",
   "components": [
     {
       "name": "Component name",
@@ -371,9 +356,9 @@ RESPOND IN ENGLISH.`,
 
     es: `Eres un SISTEMA EXPERTO DE VISIÓN POR COMPUTADORA INDUSTRIAL especializado en detección de objetos en placas de circuito impreso (PCB).
 
-MODO DE OPERACIÓN: Análisis multi-pasada con detección YOLO de alta precisión y diagnóstico profundo.
+MODO DE OPERACIÓN: Análisis multi-pasada con inspección visual IA de alta precisión y diagnóstico profundo.
 
-${hasImage ? `=== PROTOCOLO DE DETECCIÓN YOLO ALTA PRECISIÓN ===
+${hasImage ? `=== PROTOCOLO DE DETECCIÓN VISUAL ALTA PRECISIÓN ===
 
 *** REGLA CRÍTICA: PRECISIÓN DE BOUNDING BOXES ***
 Los bounding boxes DEBEN estar EXACTAMENTE posicionados sobre los componentes.
@@ -390,15 +375,7 @@ GRILLA DE REFERENCIA VISUAL 10x10:
 - Centro: x ≈ 0.4-0.6, y ≈ 0.4-0.6
 - Esquina inferior derecha: x ≈ 0.8-0.95, y ≈ 0.8-0.95
 
-TAMAÑOS TÍPICOS:
-| Componente               | width    | height   |
-|--------------------------|----------|----------|
-| IC Grande/Microcontrolador| 0.10-0.20| 0.06-0.15|
-| IC mediano               | 0.05-0.10| 0.03-0.07|
-| Condensador electrolítico| 0.02-0.05| 0.03-0.08|
-| Condensador SMD          | 0.01-0.03| 0.01-0.02|
-| Resistencia SMD          | 0.01-0.03| 0.008-0.02|
-| Conector                 | 0.06-0.20| 0.03-0.10|` : ''}
+` : ''}
 
 ${hasReferenceImage ? `=== MODO COMPARACIÓN CON REFERENCIA ===
 Se proporciona una imagen de referencia (PCB en buen estado).
@@ -438,7 +415,7 @@ Asigna un puntaje de severidad a cada problema:
   "summary": "Resumen ejecutivo",
   "overallStatus": "ok" | "warning" | "error",
   "overallSeverity": 1-10,
-  "detectionMethod": "Análisis multi-pasada con detección YOLO",
+  "detectionMethod": "Análisis multi-pasada con inspección visual IA",
   "components": [
     {
       "name": "Nombre del componente",
@@ -499,7 +476,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image, referenceImage, measurements, language = "fr" } = await req.json();
+    const { image, imageMimeType = "image/jpeg", referenceImage, referenceMimeType = "image/jpeg", measurements, language = "fr" } = await req.json();
     const t = translations[language as keyof typeof translations] || translations.fr;
 
     if (!image && (!measurements || measurements.length === 0)) {
@@ -507,6 +484,16 @@ serve(async (req) => {
         JSON.stringify({ error: t.noInput }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    let imageUrl: string | undefined;
+    let referenceUrl: string | undefined;
+    try {
+      if (image !== undefined) imageUrl = imageDataUrl(image, imageMimeType);
+      if (referenceImage !== undefined) referenceUrl = imageDataUrl(referenceImage, referenceMimeType);
+      if (measurements !== undefined && (!Array.isArray(measurements) || measurements.some((m: MeasurementData) => !m || !Number.isFinite(m.value) || !Number.isFinite(m.channel) || !["voltage", "continuity", "resistance", "signal"].includes(m.type) || typeof m.unit !== "string" || !["ok", "warning", "error"].includes(m.status)))) throw new Error("Invalid measurements.");
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error instanceof Error ? error.message : t.parseError }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -519,7 +506,18 @@ serve(async (req) => {
     const hasMeasurements = measurements && measurements.length > 0;
     const measurementReport = hasMeasurements ? formatMeasurementsForAI(measurements, language) : "";
 
-    const systemPrompt = getSystemPrompt(language, hasImage, hasMeasurements, hasReferenceImage);
+    const systemPrompt = getSystemPrompt(language, hasImage, hasMeasurements, hasReferenceImage) + `
+
+EVIDENCE AND SAFETY RULES (override any conflicting instructions above):
+This is a single vision-language inspection, NOT VISUAL, not multiple independent detector passes. Do not claim exhaustive coverage or 100% correctness.
+First verify the image actually contains a PCB. For an unrelated or unreadable image return warning, no components, low analysisQuality, and request a sharp board photo. Never invent components.
+Inspect the whole board systematically, but only list visible identifiable components. Report obscured areas, blur, glare and unreadable markings in summary and recommendations. No visible damage does not establish electrical functionality.
+Component dimensions depend on the uploaded photograph, not on typical package sizes. Use boundingBox only when localized in the PRIMARY image, in normalized top-left x,y,width,height coordinates. Omit it when uncertain. Never use reference-image coordinates.
+Do not output confidence: no calibrated detector probabilities are available. Never infer internal shorts, dead rails or faulty ICs solely from a photo or from anonymous voltages without expected values and mapped test points.
+Distinguish direct observations from hypotheses in component details. State the confirming measurement, expected value only if known, and powering conditions. Do not invent unreadable part references or recommend replacement based only on speculation.
+Voltage measurements require a safely powered low-voltage board with protected inputs; resistance and continuity require power removed and capacitors discharged. Never suggest direct Arduino connection to unknown rails or mains.
+When there is no image, do not claim to inspect solder or assign bounding boxes; discuss only supplied measurements and missing test-point context.
+Reply in the selected language with the JSON format above. Empty arrays are valid when there is insufficient evidence.`;
 
     const userContent: Array<{type: string; text?: string; image_url?: {url: string}}> = [];
 
@@ -527,7 +525,7 @@ serve(async (req) => {
       userContent.push({
         type: "image_url",
         image_url: {
-          url: `data:image/jpeg;base64,${image}`,
+          url: imageUrl,
         },
       });
     }
@@ -540,7 +538,7 @@ serve(async (req) => {
       userContent.push({
         type: "image_url",
         image_url: {
-          url: `data:image/jpeg;base64,${referenceImage}`,
+          url: referenceUrl,
         },
       });
     }
@@ -640,21 +638,11 @@ Responde ÚNICAMENTE con el JSON estructurado.`
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: t.rateLimitError }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: t.creditsError }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`${t.aiServiceError}: ${response.status}`);
+      const upstream = await response.json().catch(() => ({}));
+      const reason = upstream.message || (typeof upstream.error === "string" ? upstream.error : upstream.error?.message);
+      return new Response(JSON.stringify({ error: reason || `${t.aiServiceError}: ${response.status}` }), {
+        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json", ...(response.headers.get("Retry-After") ? { "Retry-After": response.headers.get("Retry-After") as string } : {}) }
+      });
     }
 
     const aiResponse = await response.json();
@@ -676,65 +664,9 @@ Responde ÚNICAMENTE con el JSON estructurado.`
       if (jsonString.endsWith("```")) {
         jsonString = jsonString.slice(0, -3);
       }
-      diagnosticData = JSON.parse(jsonString.trim());
-      
-      // Validate and fix bounding boxes
-      if (diagnosticData.components) {
-        diagnosticData.components = diagnosticData.components.map((c: any) => {
-          if (c.boundingBox) {
-            const x = Math.max(0, Math.min(0.95, parseFloat(c.boundingBox.x) || 0));
-            const y = Math.max(0, Math.min(0.95, parseFloat(c.boundingBox.y) || 0));
-            let width = Math.max(0.01, Math.min(0.4, parseFloat(c.boundingBox.width) || 0.05));
-            let height = Math.max(0.01, Math.min(0.4, parseFloat(c.boundingBox.height) || 0.05));
-            
-            if (x + width > 1.0) width = 1.0 - x;
-            if (y + height > 1.0) height = 1.0 - y;
-            
-            c.boundingBox = {
-              x: Math.round(x * 1000) / 1000,
-              y: Math.round(y * 1000) / 1000,
-              width: Math.round(width * 1000) / 1000,
-              height: Math.round(height * 1000) / 1000,
-            };
-          }
-          
-          if (c.confidence !== undefined) {
-            c.confidence = Math.max(0.5, Math.min(0.99, parseFloat(c.confidence) || 0.8));
-          }
-
-          // Ensure severity is valid
-          if (c.severity !== undefined) {
-            c.severity = Math.max(1, Math.min(10, parseInt(c.severity) || 5));
-          }
-          
-          return c;
-        });
-      }
-
-      // Ensure overall severity is valid
-      if (diagnosticData.overallSeverity !== undefined) {
-        diagnosticData.overallSeverity = Math.max(1, Math.min(10, parseInt(diagnosticData.overallSeverity) || 5));
-      }
-
-    } catch (parseError) {
-      console.error("Error parsing AI response:", content);
-      diagnosticData = {
-        summary: t.parseError,
-        overallStatus: "warning",
-        overallSeverity: 5,
-        components: [],
-        recommendations: t.recommendations,
-        solderAnalysis: {
-          overallQuality: "fair",
-          coldJoints: 0,
-          bridges: 0,
-          excessSolder: 0,
-          insufficientSolder: 0,
-          liftedComponents: 0
-        },
-        repairGuide: [],
-        partsToReplace: []
-      };
+      diagnosticData = normalizeDiagnostic(JSON.parse(jsonString.trim()), hasImage, language);
+    } catch {
+      return new Response(JSON.stringify({ error: t.parseError }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(
