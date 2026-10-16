@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircle } from "lucide-react";
 import { ExpertChat } from "@/components/ExpertChat";
+import { ClassroomNotebook, DiagnosticLimits } from "@/components/ClassroomNotebook";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -155,6 +156,7 @@ export default function Index() {
       />
 
       <main className="relative container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto mb-8"><DiagnosticLimits /></div>
         {!diagnosticResult ? (
           <div className="space-y-12">
             {/* Hero Section */}
@@ -192,7 +194,7 @@ export default function Index() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="hardware" className="max-w-4xl mx-auto">
-              <TabsList className="grid grid-cols-4 w-full bg-card/50 border border-border/50">
+              <TabsList className="grid grid-cols-2 sm:grid-cols-5 h-auto w-full bg-card/50 border border-border/50 [&>button]:min-h-10 [&>button]:min-w-0 [&>button]:whitespace-normal">
                 <TabsTrigger value="hardware" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Usb className="w-4 h-4 mr-2" />
                   {t.tabs.hardware}
@@ -208,6 +210,9 @@ export default function Index() {
                 <TabsTrigger value="guide" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <BookOpen className="w-4 h-4 mr-2" />
                   {t.tabs.guide}
+                </TabsTrigger>
+                <TabsTrigger value="classroom" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <BookOpen className="w-4 h-4 mr-2 shrink-0" />{t.classroom.tab}
                 </TabsTrigger>
               </TabsList>
 
@@ -269,6 +274,9 @@ export default function Index() {
               <TabsContent value="guide" className="mt-6">
                 <HardwareGuide />
               </TabsContent>
+              <TabsContent value="classroom" className="mt-6" forceMount>
+                <div className="[[data-state=inactive]_&]:hidden"><ClassroomNotebook /></div>
+              </TabsContent>
             </Tabs>
           </div>
         ) : (
@@ -281,6 +289,7 @@ export default function Index() {
               </Button>
             </div>
             <DiagnosticResult data={diagnosticResult} imageUrl={analyzedImageUrl || undefined} />
+            <ClassroomNotebook />
             
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
