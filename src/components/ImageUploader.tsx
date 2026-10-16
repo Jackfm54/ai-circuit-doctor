@@ -13,6 +13,7 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -26,16 +27,23 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
   }, []);
 
   const processFile = useCallback((file: File) => {
-    if (file && file.type.startsWith("image/")) {
+    if (isAnalyzing) return;
+    setError(null);
+    if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 10 * 1024 * 1024) {
+      setError(t.imageUploader.invalidImage);
+      return;
+    }
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setPreview(result);
-        setSelectedFile(file);
+        const img = new Image();
+        img.onload = () => { setPreview(result); setSelectedFile(file); };
+        img.onerror = () => setError(t.imageUploader.invalidImage);
+        img.src = result;
       };
+      reader.onerror = () => setError(t.imageUploader.invalidImage);
       reader.readAsDataURL(file);
-    }
-  }, []);
+  }, [isAnalyzing, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -55,6 +63,7 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
   const clearImage = () => {
     setPreview(null);
     setSelectedFile(null);
+    setError(null);
   };
 
   const handleAnalyze = () => {
@@ -95,12 +104,15 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
               className="w-full h-auto max-h-96 object-contain bg-background/50"
             />
             {!isAnalyzing && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t.imageUploader.removeImage}
                 onClick={clearImage}
                 className="absolute top-3 right-3 p-2 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -119,13 +131,14 @@ export function ImageUploader({ onImageSelect, isAnalyzing }: ImageUploaderProps
             </span>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={handleFileInput}
               className="hidden"
             />
           </label>
         )}
       </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       {preview && (
         <Button
