@@ -65,7 +65,9 @@ export function ImageAnalysisOverlay({
       if (containerRef.current && imageLoaded) {
         const img = new Image();
         img.onload = () => {
-          const containerWidth = containerRef.current!.offsetWidth;
+          const container = containerRef.current;
+          if (!container) return;
+          const containerWidth = container.offsetWidth;
           const aspectRatio = img.height / img.width;
           const height = containerWidth * aspectRatio;
           setDimensions({ width: containerWidth, height });
