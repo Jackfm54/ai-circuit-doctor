@@ -1,11 +1,14 @@
 import { decodeYolo26 } from "./yolo26-output";
-import wasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
-import wasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
+import wasmAsset from "../../public/wasm/ort-wasm-simd-threaded.wasm.asset.json";
 
 export async function createYolo26Session(file: File) {
+  if (typeof window === "undefined") throw new Error("YOLO26 runs only in the browser.");
   const ort = await import("onnxruntime-web/wasm");
   ort.env.wasm.numThreads = 1;
-  ort.env.wasm.wasmPaths = { wasm: wasmUrl, mjs: wasmModuleUrl };
+  ort.env.wasm.wasmPaths = {
+    wasm: new URL(wasmAsset.url, window.location.origin).href,
+    mjs: new URL(`${import.meta.env.BASE_URL}wasm/ort-wasm-simd-threaded.mjs`, window.location.origin).href,
+  };
   const session = await ort.InferenceSession.create(await file.arrayBuffer(), { executionProviders: ["wasm"] });
   const input = session.inputMetadata[0];
   if (!input.isTensor || input.shape.join(",") !== "1,3,640,640") {
