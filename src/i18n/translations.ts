@@ -3,21 +3,21 @@ export const translations = {
     // Header
     header: {
       title: "CircuitDiag",
-      subtitle: "Diagnostic IA v1.0",
+      subtitle: "Diagnostic IA · Atelier",
     },
     // Hero Section
     hero: {
       badge: "Système de Diagnostic Intelligent",
       title: "Détectez les pannes sur",
       titleHighlight: "cartes électroniques",
-      description: "Connectez votre matériel de diagnostic ou téléchargez une image pour que l'IA identifie les composants endommagés avec précision.",
+      description: "Inspectez une carte et confrontez les hypothèses de l'IA à vos observations et aux mesures électriques.",
     },
     // Features
     features: {
       fastAnalysis: "Analyse rapide",
       fastAnalysisDesc: "Résultats en secondes",
       advancedAI: "IA avancée",
-      advancedAIDesc: "Modèle entraîné",
+      advancedAIDesc: "Hypothèses à vérifier",
       realTime: "Temps réel",
       realTimeDesc: "Mesures en direct",
     },
@@ -68,7 +68,7 @@ export const translations = {
       clickForDetails: "Cliquez sur les cadres pour voir les détails du composant",
       confidence: "conf.",
       // New fields
-      clickHint: "Cliquez sur les recuadros pour voir les détails du composant",
+      clickHint: "Cliquez sur les cadres pour voir les détails du composant",
       diagnosticResult: "Résultat du Diagnostic",
       severity: "Sévérité",
       operative: "Opérationnels",
@@ -162,6 +162,19 @@ export const translations = {
       measurementsCaptured: "Mesures capturées",
       measurementsCapturedDesc: "mesures enregistrées. Vous pouvez les analyser maintenant.",
     },
+    classroom: {
+      tab: "Atelier",
+      title: "Carnet de diagnostic",
+      subtitle: "Observation → hypothèse → vérification",
+      limitsTitle: "Une hypothèse n'est pas une panne confirmée",
+      limits: "L'analyse visuelle utilise une IA multimodale, pas un modèle YOLO validé. Les cadres et scores sont indicatifs : une photo ne prouve ni le bon fonctionnement ni la panne d'un composant. Aucune précision de 100 % n'est garantie.",
+      safety: "Sous la supervision de l'enseignant : débrancher l'alimentation avant inspection. Ne pas connecter directement une carte à un Arduino/ESP32 sans protection adaptée. Les condensateurs peuvent conserver une charge dangereuse.",
+      schematic: "Un schéma généré est une proposition à vérifier : les pistes cachées et les valeurs illisibles ne peuvent pas être déduites avec certitude.",
+      observation: "1. Observation", observationHint: "Référence de la carte, symptôme, composant et indice visible…",
+      hypothesis: "2. Hypothèse", hypothesisHint: "Cause possible et explication ; distinguer votre raisonnement de celui de l'IA…",
+      verification: "3. Vérification", verificationHint: "Test prévu, valeur attendue, mesure obtenue et conclusion…",
+      export: "Exporter le carnet", clear: "Effacer le carnet", filename: "carnet-diagnostic.txt",
+    },
     // Language
     language: {
       label: "Langue",
@@ -173,21 +186,21 @@ export const translations = {
     // Header
     header: {
       title: "CircuitDiag",
-      subtitle: "AI Diagnosis v1.0",
+      subtitle: "AI Diagnosis · Workshop",
     },
     // Hero Section
     hero: {
       badge: "Intelligent Diagnostic System",
       title: "Detect faults on",
       titleHighlight: "electronic boards",
-      description: "Connect your diagnostic hardware or upload an image for AI to identify damaged components with precision.",
+      description: "Inspect a board and compare AI hypotheses with your observations and electrical measurements.",
     },
     // Features
     features: {
       fastAnalysis: "Fast analysis",
       fastAnalysisDesc: "Results in seconds",
       advancedAI: "Advanced AI",
-      advancedAIDesc: "Trained model",
+      advancedAIDesc: "Hypotheses to verify",
       realTime: "Real-time",
       realTimeDesc: "Live measurements",
     },
@@ -331,6 +344,19 @@ export const translations = {
       analysisErrorDesc: "Could not analyze the image",
       measurementsCaptured: "Measurements captured",
       measurementsCapturedDesc: "measurements recorded. You can analyze them now.",
+    },
+    classroom: {
+      tab: "Workshop",
+      title: "Diagnostic notebook",
+      subtitle: "Observation → hypothesis → verification",
+      limitsTitle: "A hypothesis is not a confirmed fault",
+      limits: "Visual analysis uses multimodal AI, not a validated YOLO model. Boxes and scores are indicative: a photo proves neither operation nor failure of a component. No 100% accuracy is guaranteed.",
+      safety: "Under teacher supervision: disconnect power before inspection. Do not connect a board directly to an Arduino/ESP32 without suitable protection. Capacitors may retain a dangerous charge.",
+      schematic: "A generated schematic is a proposal to verify: hidden traces and unreadable values cannot be inferred with certainty.",
+      observation: "1. Observation", observationHint: "Board reference, symptom, component and visible evidence…",
+      hypothesis: "2. Hypothesis", hypothesisHint: "Possible cause and explanation; distinguish your reasoning from the AI's…",
+      verification: "3. Verification", verificationHint: "Planned test, expected value, actual measurement and conclusion…",
+      export: "Export notebook", clear: "Clear notebook", filename: "diagnostic-notebook.txt",
     },
     // Language
     language: {
