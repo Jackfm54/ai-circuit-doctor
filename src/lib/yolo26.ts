@@ -1,6 +1,6 @@
 import { decodeYolo26 } from "./yolo26-output";
-import wasmUrl from "onnxruntime-web/dist/ort-wasm-simd-threaded.wasm?url";
-import wasmModuleUrl from "onnxruntime-web/dist/ort-wasm-simd-threaded.mjs?url";
+import wasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
+import wasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
 
 export async function createYolo26Session(file: File) {
   const ort = await import("onnxruntime-web/wasm");
