@@ -149,21 +149,24 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
   const faultyComponents = data.components.filter(c => c.status === "error");
   const warningComponents = data.components.filter(c => c.status === "warning");
 
-  const boundingBoxes: BoundingBox[] = data.components
-    .filter(c => c.boundingBox)
-    .map(c => ({
-      x: c.boundingBox!.x,
-      y: c.boundingBox!.y,
-      width: c.boundingBox!.width,
-      height: c.boundingBox!.height,
+  const boxedComponents = data.components.flatMap((c, componentIndex) => c.boundingBox ? [{ c, componentIndex }] : []);
+  const boundingBoxes: BoundingBox[] = boxedComponents
+    .map(({ c }) => ({
+      ...c.boundingBox,
+      x: c.boundingBox?.x ?? 0,
+      y: c.boundingBox?.y ?? 0,
+      width: c.boundingBox?.width ?? 0,
+      height: c.boundingBox?.height ?? 0,
       label: c.name,
       status: c.status,
       confidence: c.confidence,
     }));
 
   const handleBoxClick = (box: BoundingBox, index: number) => {
-    setSelectedComponentIndex(index);
-    const element = document.getElementById(`component-${index}`);
+    const componentIndex = boxedComponents[index]?.componentIndex;
+    if (componentIndex === undefined) return;
+    setSelectedComponentIndex(componentIndex);
+    const element = document.getElementById(`component-${componentIndex}`);
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -210,7 +213,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
       {/* Image with bounding boxes */}
-      {imageUrl && boundingBoxes.length > 0 && (
+      {imageUrl && (
         <Card className="border-primary/20 overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
@@ -223,7 +226,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
               imageUrl={imageUrl}
               boundingBoxes={boundingBoxes}
               onBoxClick={handleBoxClick}
-              selectedIndex={selectedComponentIndex}
+              selectedIndex={boxedComponents.findIndex(item => item.componentIndex === selectedComponentIndex)}
             />
             <p className="text-xs text-muted-foreground mt-3 text-center">
               {labels.clickHint}

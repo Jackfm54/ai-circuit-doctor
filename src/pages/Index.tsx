@@ -38,6 +38,7 @@ export default function Index() {
           },
           body: JSON.stringify({ 
             image: base64Image,
+             imageMimeType: file.type,
             measurements: hardwareMeasurements.length > 0 ? hardwareMeasurements : undefined,
             language
           }),
