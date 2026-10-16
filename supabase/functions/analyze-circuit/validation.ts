@@ -37,5 +37,8 @@ export function normalizeDiagnostic(value: unknown, hasImage: boolean, language:
     return { ...rest, boundingBox };
   });
   d.detectionMethod = language === "en" ? "AI visual inspection — provisional diagnosis" : "Inspection visuelle IA — diagnostic provisoire";
+  if (hasImage) d.summary += language === "en"
+    ? " This is a provisional visual assessment, not confirmation of electrical operation; confirm suspected faults with appropriate measurements."
+    : " Il s'agit d'une évaluation visuelle provisoire, pas d'une confirmation du fonctionnement électrique ; confirmez les défauts suspectés par des mesures adaptées.";
   return d;
 }

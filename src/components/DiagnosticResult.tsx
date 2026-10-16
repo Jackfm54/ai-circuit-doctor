@@ -7,6 +7,7 @@ import { ImageAnalysisOverlay, BoundingBox } from "./ImageAnalysisOverlay";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface ComponentStatus {
   name: string;
@@ -141,6 +142,7 @@ function getSolderQualityLabel(quality: string, t: any): string {
 
 export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
   const [selectedComponentIndex, setSelectedComponentIndex] = useState<number | undefined>();
+  const [showBoxes, setShowBoxes] = useState(false);
   const { t } = useLanguage();
   
   const overallConfig = statusConfig[data.overallStatus];
@@ -224,13 +226,14 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
           <CardContent>
             <ImageAnalysisOverlay
               imageUrl={imageUrl}
-              boundingBoxes={boundingBoxes}
+              boundingBoxes={showBoxes ? boundingBoxes : []}
               onBoxClick={handleBoxClick}
               selectedIndex={boxedComponents.findIndex(item => item.componentIndex === selectedComponentIndex)}
             />
-            <p className="text-xs text-muted-foreground mt-3 text-center">
-              {labels.clickHint}
-            </p>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+              <Checkbox checked={showBoxes} onCheckedChange={value => setShowBoxes(value === true)} />
+              {t.diagnostic.approximateBoxes}
+            </label>
           </CardContent>
         </Card>
       )}
@@ -260,6 +263,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed">{data.summary}</p>
+          <p className="mt-3 text-sm text-warning">{t.diagnostic.provisionalNotice}</p>
           
           {data.overallSeverity && (
             <div className="mt-4">

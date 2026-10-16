@@ -27,4 +27,8 @@ describe("Real image diagnostic validation", () => {
   test("invalid AI output fails rather than returning a fabricated report", () => {
     expect(() => normalizeDiagnostic({ summary: "Oops" }, true, "fr")).toThrow();
   });
+  test("visual assessment includes its electrical verification limitation", () => {
+    const d = normalizeDiagnostic({ summary: "No visible fault", overallStatus: "ok", components: [], recommendations: [] }, true, "en");
+    expect(d.summary).toContain("not confirmation of electrical operation");
+  });
 });

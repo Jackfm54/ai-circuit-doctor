@@ -55,6 +55,8 @@ export const translations = {
     // Diagnostic Results
     diagnostic: {
       title: "Diagnostic Complet",
+      approximateBoxes: "Afficher les repères estimés (position non garantie)",
+      provisionalNotice: "Diagnostic provisoire : une photo ne confirme pas le fonctionnement électrique. Les repères sont estimés par l'IA, pas par YOLO. Confirmez les hypothèses par des mesures adaptées.",
       newAnalysis: "Nouvelle analyse",
       consultExpert: "Consulter l'Expert",
       overallStatus: "Résultat du Diagnostic",
@@ -227,6 +229,8 @@ export const translations = {
     // Diagnostic Results
     diagnostic: {
       title: "Complete Diagnostic",
+      approximateBoxes: "Show estimated markers (position not guaranteed)",
+      provisionalNotice: "Provisional diagnosis: a photo cannot confirm electrical operation. Markers are AI estimates, not YOLO detections. Confirm suspected faults with appropriate measurements.",
       newAnalysis: "New analysis",
       consultExpert: "Consult Expert",
       overallStatus: "Diagnostic Result",
