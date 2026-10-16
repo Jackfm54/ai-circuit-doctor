@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, Context } from "react";
 import { translations, Language, TranslationKeys } from "./translations";
 
 interface LanguageContextType {
@@ -7,7 +7,13 @@ interface LanguageContextType {
   t: TranslationKeys;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+// Keep the same context identity when live preview updates this module.
+// Existing providers must remain visible to refreshed consumers.
+const LanguageContext: Context<LanguageContextType | undefined> =
+  import.meta.hot?.data.languageContext ?? createContext<LanguageContextType | undefined>(undefined);
+if (import.meta.hot) {
+  import.meta.hot.data.languageContext = LanguageContext;
+}
 
 interface LanguageProviderProps {
   children: ReactNode;
