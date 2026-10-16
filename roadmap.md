@@ -1,5 +1,6 @@
 # Tasks
 
+- [ ] Add verified YOLO26 tooling and connect PCB-specific detections without presenting general COCO weights as a fault detector.
 - [x] Repair and verify real photo analysis and input validation without simulated diagnoses; show estimated coordinates only on request because live photo testing revealed localization errors.
 - [x] Review the existing physical measurement support and identify safety limitations.
 - [x] Recommend an initial shopping kit for Canada for computer and phone boards, for a user with no equipment.
