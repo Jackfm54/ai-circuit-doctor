@@ -11,7 +11,6 @@ import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircl
 import { ExpertChat } from "@/components/ExpertChat";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Yolo26Detector } from "@/components/Yolo26Detector";
 
 export default function Index() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -261,7 +260,6 @@ export default function Index() {
                     </div>
                   )}
                   <ImageUploader onImageSelect={handleImageAnalysis} isAnalyzing={isAnalyzing} />
-                  <Yolo26Detector />
                 </div>
               </TabsContent>
 
