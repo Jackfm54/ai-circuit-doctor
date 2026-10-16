@@ -1,0 +1,2 @@
+- [x] Add a French/English classroom worksheet and visible diagnostic limits.
+- [x] Verify the classroom workflow and summarize prioritized improvements.
