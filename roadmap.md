@@ -1,5 +1,6 @@
 # Tasks
 
+- [x] Prioritize individual small SMD diodes, capacitors, resistors, and chips. Real close-up verification returned LEDs, a probable resistor network, chips and a capacitor; coverage and exact references remain unreliable, not guaranteed. Nine validation tests pass.
 - [x] Show identified components with named boxes automatically; verified a real uploaded PCB photo with seven localized components, selection, and hiding. On small screens, use numbered boxes with full names below.
 - [x] Repair and verify real photo analysis and input validation without simulated diagnoses; keep localization uncertainty visible because live photo testing revealed localization errors.
 - [x] Review the existing physical measurement support and identify safety limitations.
