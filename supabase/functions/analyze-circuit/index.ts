@@ -1,4 +1,4 @@
-import { imageDataUrl, normalizeDiagnostic } from "./validation.ts";
+import { imageDataUrl, normalizeDiagnostic, normalizeDetections, NormalizedDetection } from "./validation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -476,7 +476,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image, imageMimeType = "image/jpeg", referenceImage, referenceMimeType = "image/jpeg", measurements, language = "fr" } = await req.json();
+    const { image, imageMimeType = "image/jpeg", referenceImage, referenceMimeType = "image/jpeg", measurements, language = "fr", detections: rawDetections } = await req.json();
     const t = translations[language as keyof typeof translations] || translations.fr;
 
     if (!image && (!measurements || measurements.length === 0)) {
@@ -486,12 +486,14 @@ serve(async (req) => {
       );
     }
 
+    let detections: NormalizedDetection[] = [];
     let imageUrl: string | undefined;
     let referenceUrl: string | undefined;
     try {
       if (image !== undefined) imageUrl = imageDataUrl(image, imageMimeType);
       if (referenceImage !== undefined) referenceUrl = imageDataUrl(referenceImage, referenceMimeType);
       if (measurements !== undefined && (!Array.isArray(measurements) || measurements.some((m: MeasurementData) => !m || !Number.isFinite(m.value) || !Number.isFinite(m.channel) || !["voltage", "continuity", "resistance", "signal"].includes(m.type) || typeof m.unit !== "string" || !["ok", "warning", "error"].includes(m.status)))) throw new Error("Invalid measurements.");
+      detections = normalizeDetections(rawDetections);
     } catch (error) {
       return new Response(JSON.stringify({ error: error instanceof Error ? error.message : t.parseError }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -509,7 +511,7 @@ serve(async (req) => {
     const systemPrompt = getSystemPrompt(language, hasImage, hasMeasurements, hasReferenceImage) + `
 
 EVIDENCE AND SAFETY RULES (override any conflicting instructions above):
-This is a single vision-language inspection, NOT YOLO, not multiple independent detector passes. Do not claim exhaustive coverage or 100% correctness.
+This is a single vision-language inspection${detections.length ? " assisted by the trained YOLO component detections listed below" : ", NOT YOLO, not multiple independent detector passes"}. Do not claim exhaustive coverage or 100% correctness.
 First verify the image actually contains a PCB. For an unrelated or unreadable image return warning, no components, low analysisQuality, and request a sharp board photo. Never invent components.
 Inspect the whole board systematically, but only list visible identifiable components. Report obscured areas, blur, glare and unreadable markings in summary and recommendations. No visible damage does not establish electrical functionality.
 SMALL COMPONENT IDENTIFICATION PRIORITY:
@@ -523,7 +525,16 @@ Do not output confidence: no calibrated detector probabilities are available. Ne
 Distinguish direct observations from hypotheses in component details. State the confirming measurement, expected value only if known, and powering conditions. Do not invent unreadable part references or recommend replacement based only on speculation.
 Voltage measurements require a safely powered low-voltage board with protected inputs; resistance and continuity require power removed and capacitors discharged. Never suggest direct Arduino connection to unknown rails or mains.
 When there is no image, do not claim to inspect solder or assign bounding boxes; discuss only supplied measurements and missing test-point context.
-Reply in the selected language with the JSON format above. Empty arrays are valid when there is insufficient evidence.`;
+Reply in the selected language with the JSON format above. Empty arrays are valid when there is insufficient evidence.${detections.length ? `
+
+YOLO DETECTIONS (trained model, authoritative localization):
+The user's browser ran a YOLO model trained on labeled PCB component photos; it detected these candidates with normalized boxes (x, y, width, height):
+${detections.map((d, i) => `${i + 1}. ${d.label} (${Math.round(d.confidence * 100)}%) box(${d.bbox.x.toFixed(3)}, ${d.bbox.y.toFixed(3)}, ${d.bbox.width.toFixed(3)}, ${d.bbox.height.toFixed(3)})`).join("\n")}
+Rules for these detections:
+- Use them as the primary component list and copy each detection's boundingBox values EXACTLY into the matching component entry. Do not alter the coordinates.
+- Assess each detected component's condition (ok/warning/error) from the image itself; a detection does not imply damage.
+- You may discard a clearly wrong detection and mention it in the summary. You may add visible components the model missed, omitting their boundingBox when unsure of the location.
+- Never invent extra bounding boxes for YOLO-detected components.` : ""}`;
 
     const userContent: Array<{type: string; text?: string; image_url?: {url: string}}> = [];
 
@@ -670,7 +681,13 @@ Responde ÚNICAMENTE con el JSON estructurado.`
       if (jsonString.endsWith("```")) {
         jsonString = jsonString.slice(0, -3);
       }
-      diagnosticData = normalizeDiagnostic(JSON.parse(jsonString.trim()), hasImage, language);
+      const detectionMethodLabel = detections.length
+        ? (language === "en" ? "Trained YOLO model (10 component classes) + AI visual inspection — provisional diagnosis"
+          : language === "es" ? "Modelo YOLO entrenado (10 clases de componentes) + inspección visual IA — diagnóstico provisional"
+          : "Modèle YOLO entraîné (10 classes de composants) + inspection visuelle IA — diagnostic provisoire")
+        : undefined;
+      diagnosticData = normalizeDiagnostic(JSON.parse(jsonString.trim()), hasImage, language, detectionMethodLabel);
+      diagnosticData.detectionSource = detections.length ? "yolo" : "ai";
     } catch {
       return new Response(JSON.stringify({ error: t.parseError }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

@@ -58,6 +58,7 @@ export interface DiagnosticData {
   summary: string;
   overallStatus: "ok" | "warning" | "error";
   overallSeverity?: number;
+  detectionSource?: "yolo" | "ai";
   components: ComponentStatus[];
   recommendations: string[];
   solderAnalysis?: SolderAnalysis;
@@ -233,7 +234,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
             />
             <label className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
               <Checkbox checked={showBoxes} onCheckedChange={value => setShowBoxes(value === true)} />
-              {t.diagnostic.approximateBoxes}
+              {data.detectionSource === "yolo" ? t.diagnostic.yoloBoxes : t.diagnostic.approximateBoxes}
             </label>
             {boundingBoxes.length === 0 && (
               <p role="status" className="mt-3 text-sm text-warning">{t.diagnostic.noLocalizedComponents}</p>
@@ -267,7 +268,9 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed">{data.summary}</p>
-          <p className="mt-3 text-sm text-warning">{t.diagnostic.provisionalNotice}</p>
+          <p className="mt-3 text-sm text-warning">
+            {data.detectionSource === "yolo" ? t.diagnostic.provisionalNoticeYolo : t.diagnostic.provisionalNotice}
+          </p>
           
           {data.overallSeverity && (
             <div className="mt-4">
