@@ -1,5 +1,6 @@
 # Tasks
 
+- [ ] Prioritize individual small SMD diodes, capacitors, resistors, and chips in real photo analysis and verify the result.
 - [x] Show identified components with named boxes automatically; verified a real uploaded PCB photo with seven localized components, selection, and hiding. On small screens, use numbered boxes with full names below.
 - [x] Repair and verify real photo analysis and input validation without simulated diagnoses; keep localization uncertainty visible because live photo testing revealed localization errors.
 - [x] Review the existing physical measurement support and identify safety limitations.

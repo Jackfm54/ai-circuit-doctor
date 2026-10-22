@@ -509,9 +509,15 @@ serve(async (req) => {
     const systemPrompt = getSystemPrompt(language, hasImage, hasMeasurements, hasReferenceImage) + `
 
 EVIDENCE AND SAFETY RULES (override any conflicting instructions above):
-This is a single vision-language inspection, NOT VISUAL, not multiple independent detector passes. Do not claim exhaustive coverage or 100% correctness.
+This is a single vision-language inspection, NOT YOLO, not multiple independent detector passes. Do not claim exhaustive coverage or 100% correctness.
 First verify the image actually contains a PCB. For an unrelated or unreadable image return warning, no components, low analysisQuality, and request a sharp board photo. Never invent components.
 Inspect the whole board systematically, but only list visible identifiable components. Report obscured areas, blur, glare and unreadable markings in summary and recommendations. No visible damage does not establish electrical functionality.
+SMALL COMPONENT IDENTIFICATION PRIORITY:
+Do not stop at connectors, large capacitors or the main processor. Carefully inspect visible small surface-mount parts around ICs, power circuits and connectors: resistors, ceramic capacitors (MLCC), diodes (including LEDs), transistors and small integrated circuits.
+Give each individually distinguishable component its own components entry and tight boundingBox, including parts with no visible damage. Do not enclose a whole cluster in one box when individual parts can be separated. Retain small normalized dimensions; do not enlarge boxes to make components easier to click.
+Use type resistor, capacitor, diode, led, transistor or ic only when supported by visible evidence. Explain the evidence (readable R/C/D/Q/U designator, markings, terminals or polarity stripe) in details. Similar unmarked SMD packages cannot reliably distinguish a resistor from a capacitor: name these as unidentified SMD components, type other, and state the ambiguity rather than guessing.
+In name include the component family and the PCB designator only if readable. If no designator is readable, use a localized descriptive name, not an invented R1/C1/D1 reference. Never infer resistance, capacitance, diode rating, exact package size or IC model from appearance alone. Only report readable values, and explicitly state when the value or reference is unreadable.
+If tiny components lack enough image detail, mention the affected area in summary and request a sharply focused, straight-on macro photo of that area in recommendations. Do not claim that omitted tiny components were checked.
 Component dimensions depend on the uploaded photograph, not on typical package sizes. Use boundingBox only when localized in the PRIMARY image, in normalized top-left x,y,width,height coordinates. Omit it when uncertain. Never use reference-image coordinates.
 Do not output confidence: no calibrated detector probabilities are available. Never infer internal shorts, dead rails or faulty ICs solely from a photo or from anonymous voltages without expected values and mapped test points.
 Distinguish direct observations from hypotheses in component details. State the confirming measurement, expected value only if known, and powering conditions. Do not invent unreadable part references or recommend replacement based only on speculation.

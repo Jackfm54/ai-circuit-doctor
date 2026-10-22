@@ -16,6 +16,11 @@ describe("Real image diagnostic validation", () => {
   test("rejects fabricated invalid boxes", () => {
     expect(normalizeBox({ x: "bad", y: .2, width: .1, height: .1 })).toBeUndefined();
   });
+  test("preserves individual tiny SMD component boxes without enlarging them", () => {
+    const box = { x: 0.32145, y: 0.65432, width: 0.002, height: 0.003 };
+    const d = normalizeDiagnostic({ summary: "Visible SMD", overallStatus: "ok", recommendations: [], components: [{ name: "Small SMD resistor", details: "Value unreadable", status: "ok", boundingBox: box }] }, true, "en");
+    expect(d.components[0].boundingBox).toEqual(box);
+  });
   test("clips only at the actual image boundary", () => {
     expect(normalizeBox({ x: .9, y: .9, width: .2, height: .2 })?.width).toBeCloseTo(.1);
   });
