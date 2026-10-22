@@ -153,13 +153,14 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
 
   const boxedComponents = data.components.flatMap((c, componentIndex) => c.boundingBox ? [{ c, componentIndex }] : []);
   const boundingBoxes: BoundingBox[] = boxedComponents
-    .map(({ c }) => ({
+    .map(({ c, componentIndex }) => ({
       ...c.boundingBox,
       x: c.boundingBox?.x ?? 0,
       y: c.boundingBox?.y ?? 0,
       width: c.boundingBox?.width ?? 0,
       height: c.boundingBox?.height ?? 0,
       label: c.name,
+      componentNumber: componentIndex + 1,
       status: c.status,
       confidence: c.confidence,
     }));
