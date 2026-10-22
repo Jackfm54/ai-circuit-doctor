@@ -142,7 +142,7 @@ function getSolderQualityLabel(quality: string, t: any): string {
 
 export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
   const [selectedComponentIndex, setSelectedComponentIndex] = useState<number | undefined>();
-  const [showBoxes, setShowBoxes] = useState(false);
+  const [showBoxes, setShowBoxes] = useState(true);
   const { t } = useLanguage();
   
   const overallConfig = statusConfig[data.overallStatus];
@@ -234,6 +234,9 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
               <Checkbox checked={showBoxes} onCheckedChange={value => setShowBoxes(value === true)} />
               {t.diagnostic.approximateBoxes}
             </label>
+            {boundingBoxes.length === 0 && (
+              <p role="status" className="mt-3 text-sm text-warning">{t.diagnostic.noLocalizedComponents}</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -354,7 +357,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-medium font-mono">{component.name}</span>
+                          <span className="font-medium font-mono">{idx + 1}. {component.name}</span>
                           {component.severity && (
                             <Badge variant="outline" className={cn("text-xs", getSeverityColor(component.severity))}>
                               {labels.severity}: {component.severity}/10
