@@ -24,7 +24,30 @@ export function normalizeBox(value: unknown) {
   return { x, y, width: Math.min(width, 1 - x), height: Math.min(height, 1 - y) };
 }
 
-export function normalizeDiagnostic(value: unknown, hasImage: boolean, language: string) {
+export const MAX_DETECTIONS = 100;
+
+export interface NormalizedDetection {
+  label: string;
+  confidence: number;
+  bbox: { x: number; y: number; width: number; height: number };
+}
+
+export function normalizeDetections(value: unknown): NormalizedDetection[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new Error("Invalid detections.");
+  if (value.length > MAX_DETECTIONS) throw new Error("Too many detections.");
+  return value.map(d => {
+    if (!d || typeof d !== "object") throw new Error("Invalid detections.");
+    const { label, confidence, bbox } = d as Record<string, unknown>;
+    if (typeof label !== "string" || !label.trim() || label.length > 40) throw new Error("Invalid detections.");
+    if (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) throw new Error("Invalid detections.");
+    const box = normalizeBox(bbox);
+    if (!box) throw new Error("Invalid detections.");
+    return { label: label.trim(), confidence, bbox: box };
+  });
+}
+
+export function normalizeDiagnostic(value: unknown, hasImage: boolean, language: string, detectionMethodLabel?: string) {
   if (!value || typeof value !== "object") throw new Error("Invalid diagnostic response.");
   const d = value as Record<string, any>;
   const statuses = ["ok", "warning", "error"];
@@ -36,7 +59,7 @@ export function normalizeDiagnostic(value: unknown, hasImage: boolean, language:
     const { confidence, ...rest } = c;
     return { ...rest, boundingBox };
   });
-  d.detectionMethod = language === "en" ? "AI visual inspection — provisional diagnosis" : "Inspection visuelle IA — diagnostic provisoire";
+  d.detectionMethod = detectionMethodLabel ?? (language === "en" ? "AI visual inspection — provisional diagnosis" : "Inspection visuelle IA — diagnostic provisoire");
   if (hasImage) d.summary += language === "en"
     ? " This is a provisional visual assessment, not confirmation of electrical operation; confirm suspected faults with appropriate measurements."
     : " Il s'agit d'une évaluation visuelle provisoire, pas d'une confirmation du fonctionnement électrique ; confirmez les défauts suspectés par des mesures adaptées.";

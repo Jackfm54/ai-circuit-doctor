@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircle } from "lucide-react";
 import { ExpertChat } from "@/components/ExpertChat";
+import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -28,6 +29,15 @@ export default function Index() {
     try {
       const base64Image = preview.split(",")[1];
 
+      // Run the trained component-detection model in the browser first; its
+      // detections give the AI reliable component boxes to reason about.
+      let yoloDetections;
+      try {
+        yoloDetections = await detectComponents(preview);
+      } catch (detectError) {
+        console.warn("Component detection model unavailable, falling back to AI-only analysis:", detectError);
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-circuit`,
         {
@@ -39,6 +49,7 @@ export default function Index() {
           body: JSON.stringify({ 
             image: base64Image,
              imageMimeType: file.type,
+            detections: yoloDetections?.length ? yoloDetections : undefined,
             measurements: hardwareMeasurements.length > 0 ? hardwareMeasurements : undefined,
             language
           }),

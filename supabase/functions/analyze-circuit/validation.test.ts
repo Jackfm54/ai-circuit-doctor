@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageDataUrl, normalizeBox, normalizeDiagnostic } from "./validation";
+import { imageDataUrl, normalizeBox, normalizeDetections, normalizeDiagnostic } from "./validation";
 
 describe("Real image diagnostic validation", () => {
   test("preserves PNG encoding instead of labelling it JPEG", () => {
@@ -31,6 +31,20 @@ describe("Real image diagnostic validation", () => {
   });
   test("invalid AI output fails rather than returning a fabricated report", () => {
     expect(() => normalizeDiagnostic({ summary: "Oops" }, true, "fr")).toThrow();
+  });
+  test("keeps trained-model detections with exact boxes and confidence", () => {
+    const detections = normalizeDetections([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);
+    expect(detections).toEqual([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);
+  });
+  test("rejects detections with invalid confidence, box or payload", () => {
+    expect(() => normalizeDetections([{ label: "IC", confidence: 1.5, bbox: { x: 0, y: 0, width: 0.1, height: 0.1 } }])).toThrow();
+    expect(() => normalizeDetections([{ label: "IC", confidence: 0.9, bbox: { x: -1, y: 0, width: 0.1, height: 0.1 } }])).toThrow();
+    expect(() => normalizeDetections([{ label: "", confidence: 0.9, bbox: { x: 0, y: 0, width: 0.1, height: 0.1 } }])).toThrow();
+    expect(() => normalizeDetections("nope")).toThrow();
+  });
+  test("absent detections stay empty instead of fabricating any", () => {
+    expect(normalizeDetections(undefined)).toEqual([]);
+    expect(normalizeDetections(null)).toEqual([]);
   });
   test("visual assessment includes its electrical verification limitation", () => {
     const d = normalizeDiagnostic({ summary: "No visible fault", overallStatus: "ok", components: [], recommendations: [] }, true, "en");
