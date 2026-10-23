@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Workflow, Download, Loader2, AlertTriangle } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { ComponentStatus } from "./DiagnosticResult";
+import { NetlistSchematic, type Netlist } from "./NetlistSchematic";
 
 export type BlockKind = "power" | "protection" | "processor" | "memory" | "communication" | "interface" | "clock" | "passive" | "other";
 export interface Schematic {
@@ -19,6 +20,7 @@ interface Props {
   imageUrl?: string;
   reportId?: string;
   initialSchematic?: Schematic | null;
+  initialNetlist?: Netlist | null;
 }
 
 // Drawing-sheet palette: the schematic is an exported technical document (SVG file),
@@ -56,9 +58,11 @@ function layout(s: Schematic, components: ComponentStatus[]) {
 
 function trim(text: string, max: number) { return text.length > max ? text.slice(0, max - 1) + "…" : text; }
 
-export function SchematicView({ components, summary, imageUrl, reportId, initialSchematic }: Props) {
+export function SchematicView({ components, summary, imageUrl, reportId, initialSchematic, initialNetlist }: Props) {
   const { t, language } = useLanguage();
   const [schematic, setSchematic] = useState<Schematic | null>(initialSchematic ?? null);
+  const [netlist, setNetlist] = useState<Netlist | null>(initialNetlist ?? null);
+  const [mode, setMode] = useState<"detailed" | "blocks">("detailed");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -71,11 +75,11 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-schematic`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ image: img?.data, imageMimeType: img?.mime, components, summary, language }),
+        body: JSON.stringify({ image: img?.data, imageMimeType: img?.mime, components, summary, language, mode }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || t.schematic.error);
-      setSchematic(body);
+      if (mode === "detailed") setNetlist(body); else setSchematic(body);
     } catch (e) {
       setError(e instanceof Error ? e.message : t.schematic.error);
     } finally {
@@ -89,12 +93,14 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
     const url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${reportId ?? "circuitdiag"}-schema.svg`;
+    a.download = `${reportId ?? "circuitdiag"}-${mode === "detailed" ? "schema-detaille" : "schema-blocs"}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const view = schematic ? layout(schematic, components) : null;
+  const current = mode === "detailed" ? netlist : schematic;
+  const dateText = new Date().toLocaleDateString(language === "en" ? "en-CA" : "fr-CA");
 
   return (
     <Card className="border-primary/20 print-break-avoid">
@@ -105,7 +111,7 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
             {t.schematic.title}
           </CardTitle>
           <div className="no-print flex gap-2">
-            {schematic && (
+            {current && (
               <Button variant="outline" size="sm" onClick={download}>
                 <Download className="w-4 h-4" />
                 {t.schematic.download}
@@ -113,17 +119,29 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
             )}
             <Button variant="tech" size="sm" onClick={generate} disabled={loading || components.length === 0}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Workflow className="w-4 h-4" />}
-              {loading ? t.schematic.generating : schematic ? t.schematic.regenerate : t.schematic.generate}
+              {loading ? t.schematic.generating : current ? t.schematic.regenerate : t.schematic.generate}
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{t.schematic.description}</p>
+        <p className="text-sm text-muted-foreground">{mode === "detailed" ? t.schematic.detailedDescription : t.schematic.description}</p>
+        <div className="no-print inline-flex rounded-md border border-border p-0.5 w-fit">
+          {(["detailed", "blocks"] as const).map(m => (
+            <Button key={m} size="sm" variant={mode === m ? "secondary" : "ghost"} onClick={() => { setMode(m); setError(null); }} aria-pressed={mode === m}>
+              {m === "detailed" ? t.schematic.modeDetailed : t.schematic.modeBlocks}
+            </Button>
+          ))}
+        </div>
       </CardHeader>
       <CardContent>
         {error && <p role="alert" className="text-sm text-destructive mb-3">{error}</p>}
-        {!schematic && !loading && <p className="text-sm text-muted-foreground">{t.schematic.empty}</p>}
-        {loading && !schematic && <div className="h-40 rounded-lg border border-dashed border-border flex items-center justify-center text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin mr-2" />{t.schematic.generating}</div>}
-        {schematic && view && (
+        {!current && !loading && <p className="text-sm text-muted-foreground">{t.schematic.empty}</p>}
+        {loading && !current && <div className="h-40 rounded-lg border border-dashed border-border flex items-center justify-center text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin mr-2" />{t.schematic.generating}</div>}
+        {mode === "detailed" && netlist && (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <NetlistSchematic ref={svgRef} netlist={netlist} inferredText={t.schematic.inferred} reportId={reportId} dateText={dateText} legend={{ power: t.schematic.links.power, ground: t.schematic.links.ground, signal: t.schematic.links.data }} sheetTitle={t.schematic.detailedTitle} />
+          </div>
+        )}
+        {mode === "blocks" && schematic && view && (
           <div className="overflow-x-auto rounded-lg border border-border">
             <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${W} ${view.height}`} className="w-full min-w-[760px] h-auto" fontFamily="IBM Plex Mono, monospace">
               <defs>
@@ -204,9 +222,9 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
             </svg>
           </div>
         )}
-        {schematic && schematic.notes.length > 0 && (
+        {current && current.notes.length > 0 && (
           <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
-            {schematic.notes.map((n, i) => <li key={i} className="flex gap-2"><AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />{n}</li>)}
+            {current.notes.map((n, i) => <li key={i} className="flex gap-2"><AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />{n}</li>)}
           </ul>
         )}
       </CardContent>
