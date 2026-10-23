@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle, XCircle, Cpu, Zap, ThermometerSun, CircuitBoard, Wrench, Package, Clock, Gauge } from "lucide-react";
+import { FileDown, AlertTriangle, CheckCircle, XCircle, Cpu, Zap, ThermometerSun, CircuitBoard, Wrench, Package, Clock, Gauge } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 export interface ComponentStatus {
   name: string;
@@ -59,6 +60,7 @@ export interface DiagnosticData {
   overallStatus: "ok" | "warning" | "error";
   overallSeverity?: number;
   detectionSource?: "yolo" | "ai";
+  detectionMethod?: string;
   components: ComponentStatus[];
   recommendations: string[];
   solderAnalysis?: SolderAnalysis;
@@ -69,6 +71,8 @@ export interface DiagnosticData {
 interface DiagnosticResultProps {
   data: DiagnosticData;
   imageUrl?: string;
+  reportId?: string;
+  reportDate?: Date;
 }
 
 const statusConfig = {
@@ -141,10 +145,10 @@ function getSolderQualityLabel(quality: string, t: any): string {
   return labels[quality] || quality;
 }
 
-export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
+export function DiagnosticResult({ data, imageUrl, reportId, reportDate }: DiagnosticResultProps) {
   const [selectedComponentIndex, setSelectedComponentIndex] = useState<number | undefined>();
   const [showBoxes, setShowBoxes] = useState(true);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const overallConfig = statusConfig[data.overallStatus];
   const OverallIcon = overallConfig.icon;
@@ -216,6 +220,43 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
+      {/* Report header */}
+      <Card className="border-border print-break-avoid">
+        <CardContent className="p-5">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary">CircuitDiag</p>
+              <h2 className="text-2xl font-semibold tracking-tight mt-1">{t.pro.reportTitle}</h2>
+            </div>
+            <div className="no-print flex flex-col items-start md:items-end gap-1">
+              <Button variant="tech" onClick={() => window.print()}>
+                <FileDown className="w-4 h-4" />
+                {t.pro.exportPdf}
+              </Button>
+              <span className="text-xs text-muted-foreground">{t.pro.printHint}</span>
+            </div>
+          </div>
+          <dl className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-border pt-4 text-sm">
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">{t.pro.reportNo}</dt>
+              <dd className="font-mono mt-1">{reportId ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">{t.pro.reportDate}</dt>
+              <dd className="font-mono mt-1">{(reportDate ?? new Date()).toLocaleString(language === "en" ? "en-CA" : "fr-CA", { dateStyle: "medium", timeStyle: "short" })}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">{t.pro.reportComponents}</dt>
+              <dd className="font-mono mt-1">{data.components.length}</dd>
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">{t.pro.reportMethod}</dt>
+              <dd className="mt-1 text-xs leading-snug">{data.detectionMethod ?? "—"}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
       {/* Image with bounding boxes */}
       {imageUrl && (
         <Card className="border-primary/20 overflow-hidden">
@@ -232,7 +273,7 @@ export function DiagnosticResult({ data, imageUrl }: DiagnosticResultProps) {
               onBoxClick={handleBoxClick}
               selectedIndex={boxedComponents.findIndex(item => item.componentIndex === selectedComponentIndex)}
             />
-            <label className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+            <label className="no-print flex items-center gap-2 text-sm text-muted-foreground mt-3">
               <Checkbox checked={showBoxes} onCheckedChange={value => setShowBoxes(value === true)} />
               {data.detectionSource === "yolo" ? t.diagnostic.yoloBoxes : t.diagnostic.approximateBoxes}
             </label>

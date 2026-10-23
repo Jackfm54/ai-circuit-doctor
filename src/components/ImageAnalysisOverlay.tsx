@@ -35,6 +35,8 @@ const selectedStyles = {
 export function ImageAnalysisOverlay({ imageUrl, boundingBoxes, onBoxClick, selectedIndex }: ImageAnalysisOverlayProps) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const { t } = useLanguage();
+  // Many small boxes: show only numbers on the photo; full names are in the legend.
+  const dense = boundingBoxes.length > 12;
   return (
     <div className="w-full">
       <div className="relative w-full overflow-hidden rounded-lg border border-border">
@@ -53,8 +55,8 @@ export function ImageAnalysisOverlay({ imageUrl, boundingBoxes, onBoxClick, sele
                 style={{ left: `${box.x * 100}%`, top: `${box.y * 100}%`, width: `${box.width * 100}%`, height: `${box.height * 100}%` }}
               >
                 <span className={cn("absolute left-0 max-w-[180px] px-1.5 py-0.5 rounded-sm border bg-background/95 text-xs font-mono truncate", statusStyles[box.status], box.y < 0.06 ? "top-0" : "bottom-full")}>
-                  <span className="sm:hidden">{box.componentNumber ?? index + 1}</span>
-                  <span className="hidden sm:inline">{box.componentNumber ?? index + 1}. {box.label}</span>
+                  <span className={dense ? "" : "sm:hidden"}>{box.componentNumber ?? index + 1}</span>
+                  <span className={dense ? "hidden" : "hidden sm:inline"}>{box.componentNumber ?? index + 1}. {box.label}</span>
                 </span>
               </Button>
             ))}
