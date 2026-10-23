@@ -43,3 +43,49 @@ export function normalizeSchematic(value: unknown, componentCount: number): Sche
     notes: (Array.isArray(v.notes) ? v.notes : []).filter((n: unknown) => typeof n === "string").slice(0, 6).map((n: string) => n.slice(0, 240)),
   };
 }
+
+const SYMBOLS = ["resistor", "capacitor", "diode", "led", "crystal", "transistor", "ic", "connector", "switch", "other"] as const;
+export interface NetlistPart { component: number; designator: string; symbol: typeof SYMBOLS[number]; label: string; pins: { name: string; net: string }[] }
+export interface Netlist { title: string; parts: NetlistPart[]; nets: { name: string; kind: "power" | "ground" | "signal" }[]; notes: string[] }
+
+function netName(v: unknown) { return String(v ?? "").trim().toUpperCase().replace(/\s+/g, "_").slice(0, 20); }
+
+/** Component-level netlist: valid component numbers, unique designators, 2 pins for passives, every pin on a declared net. */
+export function normalizeNetlist(value: unknown, componentCount: number): Netlist {
+  if (!value || typeof value !== "object") throw new Error("Invalid netlist.");
+  const v = value as Record<string, any>;
+  if (!Array.isArray(v.parts)) throw new Error("Invalid netlist.");
+  const used = new Set<number>(), designators = new Set<string>();
+  const parts: NetlistPart[] = [];
+  for (const p of v.parts) {
+    if (parts.length >= 40) break;
+    if (!p || !Number.isInteger(p.component) || p.component < 1 || p.component > componentCount || used.has(p.component)) continue;
+    const designator = String(p.designator ?? "").trim().toUpperCase().slice(0, 8);
+    if (!designator || designators.has(designator)) continue;
+    const symbol = SYMBOLS.includes(p.symbol) ? p.symbol : "other";
+    const maxPins = ["resistor", "capacitor", "diode", "led", "crystal"].includes(symbol) ? 2 : 12;
+    const pins = (Array.isArray(p.pins) ? p.pins : [])
+      .filter((x: any) => x && netName(x.net))
+      .slice(0, maxPins)
+      .map((x: any) => ({ name: String(x.name ?? "").slice(0, 10), net: netName(x.net) }));
+    if (pins.length === 0) continue;
+    used.add(p.component); designators.add(designator);
+    parts.push({ component: p.component, designator, symbol, label: String(p.label ?? "").slice(0, 40), pins });
+  }
+  if (parts.length === 0) throw new Error("Invalid netlist.");
+  const declared = new Map<string, "power" | "ground" | "signal">();
+  for (const n of Array.isArray(v.nets) ? v.nets : []) {
+    const name = netName(n?.name);
+    if (name) declared.set(name, ["power", "ground", "signal"].includes(n.kind) ? n.kind : "signal");
+  }
+  const nets = [...new Set(parts.flatMap(p => p.pins.map(x => x.net)))].map(name => ({
+    name,
+    kind: declared.get(name) ?? (/^(GND|VSS|AGND|DGND)/.test(name) ? "ground" : /^(V|\d+V\d*)/.test(name) ? "power" : "signal"),
+  })) as Netlist["nets"];
+  return {
+    title: typeof v.title === "string" ? v.title.slice(0, 100) : "Schematic",
+    parts,
+    nets,
+    notes: (Array.isArray(v.notes) ? v.notes : []).filter((n: unknown) => typeof n === "string").slice(0, 6).map((n: string) => n.slice(0, 240)),
+  };
+}
