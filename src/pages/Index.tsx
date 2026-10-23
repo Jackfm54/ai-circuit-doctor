@@ -7,17 +7,28 @@ import { HardwareGuide } from "@/components/HardwareGuide";
 import { MeasurementData } from "@/hooks/useSerialConnection";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RotateCcw, Cpu, Zap, Shield, Clock, Camera, Usb, BookOpen, MessageCircle } from "lucide-react";
+import { RotateCcw, Cpu, Zap, Camera, Usb, BookOpen, MessageCircle, PlayCircle, ScanSearch, FileText, Info } from "lucide-react";
+import type { BoundingBox } from "@/components/ImageAnalysisOverlay";
+import { demoDiagnostic } from "@/data/demoDiagnostic";
+import demoBoard from "@/assets/demo-board.jpg";
 import { ExpertChat } from "@/components/ExpertChat";
 import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+
+function newReportMeta() {
+  const date = new Date();
+  const stamp = date.toISOString().slice(0, 10).replace(/-/g, "");
+  return { id: `CD-${stamp}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`, date };
+}
 
 export default function Index() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticData | null>(null);
   const [hardwareMeasurements, setHardwareMeasurements] = useState<MeasurementData[]>([]);
   const [analyzedImageUrl, setAnalyzedImageUrl] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const [reportMeta, setReportMeta] = useState<{ id: string; date: Date } | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
@@ -62,6 +73,7 @@ export default function Index() {
       }
 
       const result = await response.json();
+      setReportMeta(newReportMeta());
       setDiagnosticResult(result);
       
       toast({
@@ -117,6 +129,7 @@ export default function Index() {
       }
 
       const result = await response.json();
+      setReportMeta(newReportMeta());
       setDiagnosticResult(result);
       
       toast({
@@ -222,10 +235,8 @@ export default function Index() {
                   <span>YOLO · {heroBoxes.length} / {demoDiagnostic[demoLang].components.length}</span>
                   <span className="text-success">● LIVE MODEL</span>
                 </div>
-                <div className="pointer-events-none">
-                  <ImageAnalysisOverlay imageUrl={demoBoard} boundingBoxes={[]} />
-                </div>
-                <div className="pointer-events-none absolute inset-x-3 top-9 bottom-3 overflow-hidden rounded-lg">
+                <div className="relative overflow-hidden rounded-lg border border-border">
+                  <img src={demoBoard} alt={t.pro.demoButton} className="block w-full h-auto" />
                   {heroBoxes.map((b, i) => (
                     <span key={i} className={`absolute border ${b.status === "error" ? "border-destructive" : b.status === "warning" ? "border-warning" : "border-success"}`}
                       style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.width * 100}%`, height: `${b.height * 100}%` }} />
@@ -256,7 +267,7 @@ export default function Index() {
             </section>
 
             {/* Main Content Tabs */}
-            <Tabs defaultValue="hardware" className="max-w-4xl mx-auto">
+            <Tabs id="workspace" defaultValue="hardware" className="max-w-4xl mx-auto scroll-mt-24">
               <TabsList className="grid grid-cols-4 w-full bg-card/50 border border-border/50">
                 <TabsTrigger value="hardware" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Usb className="w-4 h-4 mr-2" />
@@ -338,16 +349,22 @@ export default function Index() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">{t.diagnostic.title}</h2>
+            {isDemo && (
+              <div className="no-print flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-4 rounded-lg border border-primary/30 bg-primary/10 text-sm">
+                <span className="flex items-center gap-2"><Info className="w-4 h-4 text-primary shrink-0" />{t.pro.demoBanner}</span>
+                <Button size="sm" variant="tech" onClick={handleReset}>{t.pro.exitDemo}</Button>
+              </div>
+            )}
+            <div className="no-print flex items-center justify-end">
               <Button onClick={handleReset} variant="tech">
                 <RotateCcw className="w-4 h-4" />
                 {t.diagnostic.newAnalysis}
               </Button>
             </div>
-            <DiagnosticResult data={diagnosticResult} imageUrl={analyzedImageUrl || undefined} />
-            
-            <div className="mt-8">
+            <DiagnosticResult data={shownResult} imageUrl={shownImage || undefined} reportId={reportMeta?.id} reportDate={reportMeta?.date} />
+            <p className="hidden print:block text-xs text-muted-foreground">{t.pro.footer}</p>
+
+            <div className="no-print mt-8">
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-primary" />
                 {t.diagnostic.consultExpert}
