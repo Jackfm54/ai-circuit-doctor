@@ -1,4 +1,4 @@
-import { imageDataUrl, normalizeDiagnostic, normalizeDetections, NormalizedDetection } from "./validation.ts";
+import { addMissingDetections, imageDataUrl, normalizeDiagnostic, normalizeDetections, NormalizedDetection } from "./validation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -533,7 +533,7 @@ ${detections.map((d, i) => `${i + 1}. ${d.label} (${Math.round(d.confidence * 10
 Rules for these detections:
 - Use them as the primary component list and copy each detection's boundingBox values EXACTLY into the matching component entry. Do not alter the coordinates.
 - Assess each detected component's condition (ok/warning/error) from the image itself; a detection does not imply damage.
-- You may discard a clearly wrong detection and mention it in the summary. You may add visible components the model missed, omitting their boundingBox when unsure of the location.
+- Keep EVERY detection as its own component entry, including tiny SMD resistors, capacitors and diodes. If a detection looks wrong, keep it with status "warning" and explain the doubt in its details. You may add visible components the model missed, omitting their boundingBox when unsure of the location.
 - Never invent extra bounding boxes for YOLO-detected components.` : ""}`;
 
     const userContent: Array<{type: string; text?: string; image_url?: {url: string}}> = [];
@@ -687,6 +687,7 @@ Responde ÚNICAMENTE con el JSON estructurado.`
           : "Modèle YOLO entraîné (10 classes de composants) + inspection visuelle IA — diagnostic provisoire")
         : undefined;
       diagnosticData = normalizeDiagnostic(JSON.parse(jsonString.trim()), hasImage, language, detectionMethodLabel);
+      if (detections.length) diagnosticData.components = addMissingDetections(diagnosticData.components, detections, language);
       diagnosticData.detectionSource = detections.length ? "yolo" : "ai";
     } catch {
       return new Response(JSON.stringify({ error: t.parseError }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
