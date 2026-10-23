@@ -46,6 +46,19 @@ export const translations = {
       printHint: "Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».",
       footer: "Diagnostic provisoire : confirmez toujours les défauts par des mesures.",
     },
+    schematic: {
+      title: "Schéma électronique",
+      description: "Schéma fonctionnel par blocs déduit des composants détectés : alimentation, processeur, mémoire, communication et interfaces.",
+      generate: "Générer le schéma",
+      regenerate: "Régénérer",
+      generating: "Génération du schéma…",
+      download: "Télécharger (SVG)",
+      empty: "Cliquez sur « Générer le schéma » pour dessiner le circuit de cette carte.",
+      error: "La génération du schéma a échoué.",
+      inferred: "Schéma déduit de la photo — pistes internes non visibles, à vérifier par mesure.",
+      kinds: { power: "Alimentation", protection: "Protection", processor: "Processeur", memory: "Mémoire", communication: "Communication", interface: "Interface", clock: "Horloge", passive: "Passifs", other: "Autre" },
+      links: { power: "Alimentation", ground: "Masse", data: "Données", analog: "Analogique", rf: "RF" },
+    },
     // Tabs
     tabs: {
       hardware: "Matériel",
@@ -247,6 +260,19 @@ export const translations = {
       exportPdf: "Export PDF",
       printHint: "In the print window, choose “Save as PDF”.",
       footer: "Provisional diagnosis: always confirm faults with measurements.",
+    },
+    schematic: {
+      title: "Electronic schematic",
+      description: "Functional block schematic inferred from the detected components: power, processor, memory, communication and interfaces.",
+      generate: "Generate schematic",
+      regenerate: "Regenerate",
+      generating: "Generating schematic…",
+      download: "Download (SVG)",
+      empty: "Click “Generate schematic” to draw this board's circuit.",
+      error: "Schematic generation failed.",
+      inferred: "Inferred from the photo — inner traces are not visible, verify by measurement.",
+      kinds: { power: "Power", protection: "Protection", processor: "Processor", memory: "Memory", communication: "Communication", interface: "Interface", clock: "Clock", passive: "Passives", other: "Other" },
+      links: { power: "Power", ground: "Ground", data: "Data", analog: "Analog", rf: "RF" },
     },
     // Tabs
     tabs: {

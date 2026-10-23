@@ -11,6 +11,8 @@ import { RotateCcw, Cpu, Zap, Camera, Usb, BookOpen, MessageCircle, PlayCircle, 
 import type { BoundingBox } from "@/components/ImageAnalysisOverlay";
 import { demoDiagnostic } from "@/data/demoDiagnostic";
 import demoBoard from "@/assets/demo-board.jpg";
+import { SchematicView } from "@/components/SchematicView";
+import { demoSchematicFr } from "@/data/demoSchematic";
 import { ExpertChat } from "@/components/ExpertChat";
 import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
@@ -362,6 +364,16 @@ export default function Index() {
               </Button>
             </div>
             <DiagnosticResult data={shownResult} imageUrl={shownImage || undefined} reportId={reportMeta?.id} reportDate={reportMeta?.date} />
+            <div className="max-w-5xl mx-auto">
+              <SchematicView
+                key={`${isDemo ? "demo" : reportMeta?.id}-${language}`}
+                components={shownResult.components}
+                summary={shownResult.summary}
+                imageUrl={shownImage || undefined}
+                reportId={reportMeta?.id}
+                initialSchematic={isDemo && language !== "en" ? demoSchematicFr : null}
+              />
+            </div>
             <p className="hidden print:block text-xs text-muted-foreground">{t.pro.footer}</p>
 
             <div className="no-print mt-8">
