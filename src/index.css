@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -104,11 +104,11 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
   }
 }
 
@@ -157,4 +157,26 @@
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
+}
+
+@media print {
+  :root, .dark {
+    --background: 0 0% 100%;
+    --foreground: 220 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 38%;
+    --border: 220 12% 82%;
+    --primary: 190 85% 30%;
+    --success: 145 65% 30%;
+    --warning: 32 90% 38%;
+    --destructive: 0 70% 42%;
+    --secondary: 220 15% 94%;
+  }
+  @page { margin: 14mm; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none !important; }
+  .print-break-avoid { break-inside: avoid; }
+  .glow-border, .glow-text { box-shadow: none !important; text-shadow: none !important; }
 }
