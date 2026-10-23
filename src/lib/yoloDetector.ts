@@ -28,7 +28,7 @@ const IMG_SIZE = 960;
 const CONF_THRESHOLD = 0.3;
 // Tiles see micro components (SMD resistors, MLCC, diodes) at higher zoom, so a
 // slightly lower threshold is still reliable there.
-const TILE_CONF_THRESHOLD = 0.25;
+const TILE_CONF_THRESHOLD = 0.2;
 const IOU_THRESHOLD = 0.45;
 // Same-class box mostly inside a stronger one = duplicate from another tile.
 const CONTAINMENT_THRESHOLD = 0.75;
@@ -201,7 +201,7 @@ function tileRegions(area: Region): Region[] {
   const { sx: ox, sy: oy, sw: width, sh: height } = area;
   if (Math.min(width, height) < MIN_SIDE_FOR_TILING) return [];
   // Larger areas get a finer grid so micro components stay visible to the model.
-  const grid = Math.max(width, height) >= 2000 ? 3 : 2;
+  const grid = Math.max(width, height) >= 1400 ? 4 : 2;
   const cols = width >= height ? grid : Math.max(2, grid - 1);
   const rows = height > width ? grid : Math.max(2, grid - 1);
   const tileW = width / (cols - (cols - 1) * TILE_OVERLAP);
