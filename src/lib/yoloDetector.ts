@@ -36,8 +36,8 @@ let sessionPromise: Promise<ort.InferenceSession> | null = null;
 function getSession(): Promise<ort.InferenceSession> {
   if (!sessionPromise) {
     (ort.env.wasm as unknown as { wasmPaths: unknown }).wasmPaths = {
-      mjs: new URL(wasmLoaderAsset.url, window.location.origin).href,
-      wasm: new URL(wasmAsset.url, window.location.origin).href,
+      mjs: new URL(wasmLoaderUrl, window.location.origin).href,
+      wasm: new URL(wasmUrl, window.location.origin).href,
     };
     ort.env.wasm.numThreads = 1;
     sessionPromise = ort.InferenceSession.create(modelAsset.url, {
