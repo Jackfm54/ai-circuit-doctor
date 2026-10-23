@@ -5,3 +5,5 @@ verify_jwt = false
 
 [functions.expert-chat]
 verify_jwt = false
+[functions.generate-schematic]
+verify_jwt = false
