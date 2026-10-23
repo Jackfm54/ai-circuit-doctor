@@ -13,6 +13,7 @@ import { demoDiagnostic } from "@/data/demoDiagnostic";
 import demoBoard from "@/assets/demo-board.jpg";
 import { SchematicView } from "@/components/SchematicView";
 import { demoSchematicFr } from "@/data/demoSchematic";
+import { demoNetlistFr } from "@/data/demoNetlist";
 import { ExpertChat } from "@/components/ExpertChat";
 import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
@@ -372,6 +373,7 @@ export default function Index() {
                 imageUrl={shownImage || undefined}
                 reportId={reportMeta?.id}
                 initialSchematic={isDemo && language !== "en" ? demoSchematicFr : null}
+                initialNetlist={isDemo && language !== "en" ? demoNetlistFr : null}
               />
             </div>
             <p className="hidden print:block text-xs text-muted-foreground">{t.pro.footer}</p>
