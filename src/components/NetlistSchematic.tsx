@@ -74,7 +74,7 @@ function build(netlist: Netlist) {
 
   // Nets spanning several rows need a spine slot in the left margin; reserve room first.
   const cells: Cell[] = [];
-  const provisionalMargin = 60;
+  const provisionalMargin = 220; // upper bound of the spine area; cells shift left once the real width is known
   let x = provisionalMargin + GAP, row = 0;
   const rowHeights: number[] = [0];
   for (const part of parts) {
@@ -91,7 +91,7 @@ function build(netlist: Netlist) {
   const netRows = new Map<string, Set<number>>();
   cells.forEach(c => c.part.pins.forEach(p => { if (wired(p.net)) { if (!netRows.has(p.net)) netRows.set(p.net, new Set()); netRows.get(p.net)!.add(c.row); } }));
   const spineNets = [...netRows].filter(([, r]) => r.size > 1).map(([n]) => n);
-  const margin = 40 + spineNets.length * 6 + 20;
+  const margin = Math.min(provisionalMargin, 40 + spineNets.length * 6 + 20);
   const shift = margin - provisionalMargin;
   cells.forEach(c => { c.x += shift; });
   const spineX = (net: string) => 40 + 10 + spineNets.indexOf(net) * 6;
