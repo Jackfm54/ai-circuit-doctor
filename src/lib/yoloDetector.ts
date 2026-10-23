@@ -28,7 +28,7 @@ const IMG_SIZE = 960;
 const CONF_THRESHOLD = 0.3;
 // Tiles see micro components (SMD resistors, MLCC, diodes) at higher zoom, so a
 // slightly lower threshold is still reliable there.
-const TILE_CONF_THRESHOLD = 0.2;
+const TILE_CONF_THRESHOLD = 0.25;
 const IOU_THRESHOLD = 0.45;
 // Same-class box mostly inside a stronger one = duplicate from another tile.
 const CONTAINMENT_THRESHOLD = 0.75;
@@ -174,34 +174,11 @@ async function detectRegion(
 
 interface Region { sx: number; sy: number; sw: number; sh: number }
 
-/**
- * Area of the photo that contains the board: the union of the first-pass
- * detections plus a margin, so zoomed tiles are spent on the board and not on
- * the table around it.
- */
-function boardArea(candidates: Candidate[], width: number, height: number): Region {
-  if (candidates.length === 0) return { sx: 0, sy: 0, sw: width, sh: height };
-  let x1 = 1, y1 = 1, x2 = 0, y2 = 0;
-  for (const c of candidates) {
-    x1 = Math.min(x1, c.x);
-    y1 = Math.min(y1, c.y);
-    x2 = Math.max(x2, c.x + c.width);
-    y2 = Math.max(y2, c.y + c.height);
-  }
-  const marginX = (x2 - x1) * 0.12;
-  const marginY = (y2 - y1) * 0.12;
-  const sx = Math.round(Math.max(0, x1 - marginX) * width);
-  const sy = Math.round(Math.max(0, y1 - marginY) * height);
-  const ex = Math.round(Math.min(1, x2 + marginX) * width);
-  const ey = Math.round(Math.min(1, y2 + marginY) * height);
-  return { sx, sy, sw: ex - sx, sh: ey - sy };
-}
-
 function tileRegions(area: Region): Region[] {
   const { sx: ox, sy: oy, sw: width, sh: height } = area;
   if (Math.min(width, height) < MIN_SIDE_FOR_TILING) return [];
   // Larger areas get a finer grid so micro components stay visible to the model.
-  const grid = Math.max(width, height) >= 1400 ? 4 : 2;
+  const grid = Math.max(width, height) >= 2600 ? 3 : 2;
   const cols = width >= height ? grid : Math.max(2, grid - 1);
   const rows = height > width ? grid : Math.max(2, grid - 1);
   const tileW = width / (cols - (cols - 1) * TILE_OVERLAP);
@@ -226,7 +203,7 @@ function tileRegions(area: Region): Region[] {
  * Runs the trained YOLO model in the browser and returns component detections
  * with boxes normalized to the ORIGINAL image (0-1, top-left origin).
  * The whole photo is analysed first (large parts), then overlapping zoomed
- * tiles over the board area (micro SMD parts); results are merged without duplicates.
+ * tiles (micro SMD parts); results are merged without duplicates.
  */
 export async function detectComponents(imageUrl: string): Promise<YoloDetection[]> {
   const session = await getSession();
@@ -242,8 +219,7 @@ export async function detectComponents(imageUrl: string): Promise<YoloDetection[
       CONF_THRESHOLD,
       false,
     );
-    const area = boardArea(candidates, bitmap.width, bitmap.height);
-    for (const region of tileRegions(area)) {
+    for (const region of tileRegions({ sx: 0, sy: 0, sw: bitmap.width, sh: bitmap.height })) {
       candidates.push(...(await detectRegion(session, bitmap, region, TILE_CONF_THRESHOLD, true)));
     }
 
