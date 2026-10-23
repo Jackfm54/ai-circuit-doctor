@@ -1,7 +1,9 @@
 import * as ort from "onnxruntime-web";
 import modelAsset from "@/assets/pcb_yolov8s.onnx.asset.json";
-import wasmAsset from "@/assets/ort-wasm-simd-threaded.wasm.asset.json";
-import wasmLoaderAsset from "@/assets/ort-wasm-simd-threaded.mjs.asset.json";
+// The wasm loader must come from the bundle (node_modules via ?url): the CDN
+// serves .mjs as text/plain, which browsers refuse to import as a module.
+import wasmUrl from "onnxruntime-web/dist/ort-wasm-simd-threaded.wasm?url";
+import wasmLoaderUrl from "onnxruntime-web/dist/ort-wasm-simd-threaded.mjs?url";
 
 // Classes of the trained PCB component model
 // (github.com/wangshnegqi/pcb-component-detection-dataset-yolo, CC BY 4.0)
