@@ -9,3 +9,4 @@
 - [x] Recommend an initial shopping kit for Canada for computer and phone boards, for a user with no equipment.
 - [ ] Specify final wiring and compatible measurement firmware. Blocked: the exact board and safe test points must be identified; direct Arduino connections are not suitable for unknown computer or phone rails.- [x] Detect micro SMD components (tiled YOLO + keep every detection)
 - [x] Professional redesign: hero, how-it-works, report header, PDF export, demo mode
+- [x] Professional block schematic generated from the analyzed board (SVG download, demo copy)
