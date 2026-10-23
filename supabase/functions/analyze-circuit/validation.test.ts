@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { imageDataUrl, normalizeBox, normalizeDetections, normalizeDiagnostic } from "./validation";
+import { addMissingDetections, imageDataUrl, normalizeBox, normalizeDetections, normalizeDiagnostic } from "./validation";
 
 describe("Real image diagnostic validation", () => {
   test("preserves PNG encoding instead of labelling it JPEG", () => {
@@ -49,5 +49,15 @@ describe("Real image diagnostic validation", () => {
   test("visual assessment includes its electrical verification limitation", () => {
     const d = normalizeDiagnostic({ summary: "No visible fault", overallStatus: "ok", components: [], recommendations: [] }, true, "en");
     expect(d.summary).toContain("not confirmation of electrical operation");
+  });
+  test("every trained-model detection reaches the user with its exact box", () => {
+    const detections = normalizeDetections([
+      { label: "IC", confidence: 0.9, bbox: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { label: "Resistor", confidence: 0.4, bbox: { x: 0.6, y: 0.6, width: 0.01, height: 0.02 } },
+    ]);
+    const merged = addMissingDetections([{ name: "CPU", details: "OK", status: "ok", boundingBox: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }], detections, "fr");
+    expect(merged).toHaveLength(2);
+    expect(merged[1].name).toBe("Résistance CMS");
+    expect(merged[1].boundingBox).toEqual({ x: 0.6, y: 0.6, width: 0.01, height: 0.02 });
   });
 });

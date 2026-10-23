@@ -65,3 +65,50 @@ export function normalizeDiagnostic(value: unknown, hasImage: boolean, language:
     : " Il s'agit d'une évaluation visuelle provisoire, pas d'une confirmation du fonctionnement électrique ; confirmez les défauts suspectés par des mesures adaptées.";
   return d;
 }
+const DETECTION_NAMES: Record<string, { fr: string; en: string; es: string; type: string }> = {
+  "Resistor": { fr: "Résistance CMS", en: "SMD resistor", es: "Resistencia SMD", type: "resistor" },
+  "Capacitor": { fr: "Condensateur", en: "Capacitor", es: "Condensador", type: "capacitor" },
+  "Diode": { fr: "Diode", en: "Diode", es: "Diodo", type: "diode" },
+  "LED": { fr: "LED", en: "LED", es: "LED", type: "led" },
+  "IC": { fr: "Circuit intégré", en: "Integrated circuit", es: "Circuito integrado", type: "ic" },
+  "Connector": { fr: "Connecteur", en: "Connector", es: "Conector", type: "connector" },
+  "Switch/Button": { fr: "Interrupteur / bouton", en: "Switch / button", es: "Interruptor / botón", type: "other" },
+  "Header": { fr: "Barrette de broches", en: "Pin header", es: "Tira de pines", type: "connector" },
+  "Crystal": { fr: "Quartz", en: "Crystal", es: "Cristal", type: "crystal" },
+  "Debug/TP": { fr: "Point de test", en: "Test point", es: "Punto de prueba", type: "other" },
+};
+
+function boxIoU(a: NormalizedDetection["bbox"], b: NormalizedDetection["bbox"]): number {
+  const w = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+  const h = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+  const inter = w * h;
+  const union = a.width * a.height + b.width * b.height - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+/**
+ * Every trained-model detection must reach the user: detections the AI left out
+ * of its component list are appended with their exact box and a neutral note.
+ */
+export function addMissingDetections(components: Record<string, any>[], detections: NormalizedDetection[], language: string) {
+  const lang = language === "en" ? "en" : language === "es" ? "es" : "fr";
+  const note = {
+    fr: "Détecté par le modèle entraîné. Aucune anomalie visible n'a été signalée pour ce composant ; vérifiez-le par mesure si nécessaire.",
+    en: "Detected by the trained model. No visible anomaly was reported for this component; verify it by measurement if needed.",
+    es: "Detectado por el modelo entrenado. No se informó ninguna anomalía visible para este componente; verifíquelo con mediciones si es necesario.",
+  }[lang];
+  const result = [...components];
+  for (const d of detections) {
+    const covered = result.some(c => c.boundingBox && boxIoU(c.boundingBox, d.bbox) >= 0.5);
+    if (covered) continue;
+    const info = DETECTION_NAMES[d.label];
+    result.push({
+      name: info ? info[lang] : d.label,
+      type: info?.type ?? "other",
+      status: "ok",
+      details: note,
+      boundingBox: { ...d.bbox },
+    });
+  }
+  return result;
+}
