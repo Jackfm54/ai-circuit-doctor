@@ -32,6 +32,18 @@ describe("Real image diagnostic validation", () => {
   test("invalid AI output fails rather than returning a fabricated report", () => {
     expect(() => normalizeDiagnostic({ summary: "Oops" }, true, "fr")).toThrow();
   });
+  test("retains trace findings without manufacturing detector coordinates", () => {
+    const diagnostic = normalizeDiagnostic({
+      summary: "Possible exposed copper damage",
+      overallStatus: "warning",
+      recommendations: [],
+      components: [{ name: "Trace near connector", type: "other", status: "warning", details: "Visible gap; continuity unmeasured", location: "Upper left" }],
+    }, true, "en");
+    expect(diagnostic.components).toHaveLength(1);
+    expect(diagnostic.components[0].type).toBe("other");
+    expect(diagnostic.components[0].status).toBe("warning");
+    expect(diagnostic.components[0].boundingBox).toBeUndefined();
+  });
   test("keeps trained-model detections with exact boxes and confidence", () => {
     const detections = normalizeDetections([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);
     expect(detections).toEqual([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);
