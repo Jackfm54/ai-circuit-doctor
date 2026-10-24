@@ -1,5 +1,7 @@
 # Tasks
 
+- [ ] Strengthen real-photo inspection of visible traces, component bodies and resistors; verify the deployed analysis with a real photo, retaining measurement limitations.
+
 - [x] Integrate a trained YOLO component model (10 classes, pcb-component-detection-dataset-yolo, CC BY 4.0): browser-side ONNX detection (src/lib/yoloDetector.ts) feeds analyze-circuit, which copies detection boxes exactly and only assigns condition; verified end-to-end with a real PCB photo (12 localized components) and a direct function check (detectionSource "yolo", box copied verbatim). Twelve validation tests pass.
 - [x] Fix the Colab training notebook: the FICS-PCB download link was dead (404) and a cell referenced an undefined variable; now clones the real dataset repo with a pretrained checkpoint and a fast export mode (entrenar_yolo_pcb.ipynb in Files).
 - [x] Prioritize individual small SMD diodes, capacitors, resistors, and chips. Real close-up verification returned LEDs, a probable resistor network, chips and a capacitor; coverage and exact references remain unreliable, not guaranteed. Nine validation tests pass.
