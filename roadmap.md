@@ -1,5 +1,7 @@
 # Tasks
 
+- [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original.
+
 - [x] Strengthen real-photo inspection of visible traces, component bodies and resistors. Deployed and checked through a fresh photo upload (HTTP 200, 11 components, trace assessment and macro-photo limitations); 14 validation tests pass. This check used AI fallback, not YOLO, and does not establish defect-detection accuracy or electrical functionality.
 
 - [x] Integrate a trained YOLO component model (10 classes, pcb-component-detection-dataset-yolo, CC BY 4.0): browser-side ONNX detection (src/lib/yoloDetector.ts) feeds analyze-circuit, which copies detection boxes exactly and only assigns condition; verified end-to-end with a real PCB photo (12 localized components) and a direct function check (detectionSource "yolo", box copied verbatim). Twelve validation tests pass.
