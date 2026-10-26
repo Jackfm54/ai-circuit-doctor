@@ -155,17 +155,18 @@ export default function Index() {
   };
 
   const handleMeasurementsReady = (measurements: MeasurementData[]) => {
+    const isFirst = hardwareMeasurements.length === 0 && measurements.length > 0;
     setHardwareMeasurements(measurements);
-    if (measurements.length === 0) return;
+    if (!isFirst) return;
     toast({
       title: t.toasts.measurementsCaptured,
-      description: `${measurements.length} ${t.toasts.measurementsCapturedDesc}`,
+      description: t.hardware.nextStepPhoto,
     });
   };
 
   const handleReset = () => {
     setDiagnosticResult(null);
-    setHardwareMeasurements([]);
+    setReportMeasurements([]);
     setAnalyzedImageUrl(null);
     setIsDemo(false);
   };
