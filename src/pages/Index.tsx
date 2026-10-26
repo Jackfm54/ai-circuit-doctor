@@ -19,6 +19,7 @@ import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { aiResponseError } from "@/lib/aiResponse";
+import { MeasurementsUsed } from "@/components/MeasurementsUsed";
 
 function newReportMeta() {
   const date = new Date();
@@ -30,6 +31,8 @@ export default function Index() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticData | null>(null);
   const [hardwareMeasurements, setHardwareMeasurements] = useState<MeasurementData[]>([]);
+  const [reportMeasurements, setReportMeasurements] = useState<MeasurementData[]>([]);
+  const [activeTab, setActiveTab] = useState("hardware");
   const [analyzedImageUrl, setAnalyzedImageUrl] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const [reportMeta, setReportMeta] = useState<{ id: string; date: Date } | null>(null);
@@ -79,6 +82,7 @@ export default function Index() {
 
       const result = await response.json();
       setReportMeta(newReportMeta());
+      setReportMeasurements(hardwareMeasurements);
       setDiagnosticResult(result);
       
       toast({
@@ -136,6 +140,7 @@ export default function Index() {
 
       const result = await response.json();
       setReportMeta(newReportMeta());
+      setReportMeasurements(hardwareMeasurements);
       setDiagnosticResult(result);
       
       toast({
@@ -155,17 +160,18 @@ export default function Index() {
   };
 
   const handleMeasurementsReady = (measurements: MeasurementData[]) => {
+    const isFirst = hardwareMeasurements.length === 0 && measurements.length > 0;
     setHardwareMeasurements(measurements);
-    if (measurements.length === 0) return;
+    if (!isFirst) return;
     toast({
       title: t.toasts.measurementsCaptured,
-      description: `${measurements.length} ${t.toasts.measurementsCapturedDesc}`,
+      description: t.hardware.nextStepPhoto,
     });
   };
 
   const handleReset = () => {
     setDiagnosticResult(null);
-    setHardwareMeasurements([]);
+    setReportMeasurements([]);
     setAnalyzedImageUrl(null);
     setIsDemo(false);
   };
@@ -274,7 +280,7 @@ export default function Index() {
             </section>
 
             {/* Main Content Tabs */}
-            <Tabs id="workspace" defaultValue="hardware" className="max-w-4xl mx-auto scroll-mt-24">
+            <Tabs id="workspace" value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto scroll-mt-24">
               <TabsList className="grid grid-cols-4 w-full bg-card/50 border border-border/50">
                 <TabsTrigger value="hardware" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Usb className="w-4 h-4 mr-2" />
@@ -294,42 +300,37 @@ export default function Index() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="hardware" className="mt-6 space-y-6">
+              <TabsContent value="hardware" forceMount className="mt-6 space-y-6 data-[state=inactive]:hidden">
                 <SerialConnection onMeasurementsReady={handleMeasurementsReady} />
-                
+
                 {hardwareMeasurements.length > 0 && (
-                  <div className="flex justify-center gap-4">
-                    <Button 
-                      onClick={handleHardwareOnlyAnalysis} 
-                      variant="techGlow"
-                      disabled={isAnalyzing}
-                      size="lg"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Cpu className="w-4 h-4 mr-2 animate-spin" />
-                          {t.hardware.analyzing}
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4 mr-2" />
-                          {t.hardware.analyzeButton} ({hardwareMeasurements.length} {t.hardware.measurements})
-                        </>
-                      )}
-                    </Button>
+                  <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 space-y-3 text-center">
+                    <p className="text-sm text-foreground">{t.hardware.nextStepPhoto}</p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-3">
+                      <Button onClick={() => setActiveTab("image")} variant="techGlow" size="lg" disabled={isAnalyzing}>
+                        <Camera className="w-4 h-4 mr-2" />
+                        {t.hardware.addPhotoButton}
+                      </Button>
+                      <Button onClick={handleHardwareOnlyAnalysis} variant="tech" size="lg" disabled={isAnalyzing}>
+                        {isAnalyzing ? (
+                          <>
+                            <Cpu className="w-4 h-4 mr-2 animate-spin" />
+                            {t.hardware.analyzing}
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4 mr-2" />
+                            {t.hardware.measurementsOnlyButton} ({hardwareMeasurements.length})
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
 
-                <div className="text-center text-sm text-muted-foreground">
-                  <p>
-                    {t.hardware.connectPrompt}
-                    {hardwareMeasurements.length > 0 && (
-                      <span className="text-primary ml-1">
-                        {t.hardware.combineWithImage}
-                      </span>
-                    )}
-                  </p>
-                </div>
+                {hardwareMeasurements.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground">{t.hardware.connectPrompt}</p>
+                )}
               </TabsContent>
 
               <TabsContent value="image" className="mt-6">
@@ -369,6 +370,7 @@ export default function Index() {
               </Button>
             </div>
             <DiagnosticResult data={shownResult} imageUrl={shownImage || undefined} reportId={reportMeta?.id} reportDate={reportMeta?.date} />
+            {!isDemo && <MeasurementsUsed measurements={reportMeasurements} />}
             <div className="max-w-5xl mx-auto">
               <SchematicView
                 key={`${isDemo ? "demo" : reportMeta?.id}-${language}`}

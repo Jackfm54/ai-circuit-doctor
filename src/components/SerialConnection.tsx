@@ -39,6 +39,13 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
   const [isConnecting, setIsConnecting] = useState(false);
   useEffect(() => { if (!isConnected) setIsScanning(false); }, [isConnected]);
 
+  // Share readings with the page as they arrive, so a photo analysis started
+  // during or after a scan always includes them (not only after STOP).
+  useEffect(() => {
+    if (measurements.length > 0) onMeasurementsReady?.(measurements);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measurements]);
+
   const measurementLabels: Record<MeasurementData["type"], string> = {
     voltage: language === "fr" ? "Tension" : "Voltage",
     continuity: language === "fr" ? "Continuité" : "Continuity",

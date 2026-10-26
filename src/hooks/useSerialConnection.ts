@@ -1,5 +1,5 @@
 /// <reference types="w3c-web-serial" />
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 import { parseMeasurement } from "@/lib/serialMeasurement";
 import type { MeasurementData } from "@/lib/serialMeasurement";
@@ -147,6 +147,24 @@ export function useSerialConnection() {
     } catch (error) {
       console.error("Disconnect error:", error);
     }
+  }, []);
+
+  // Release the USB port if the panel unmounts, so Arduino IDE or a later
+  // reconnection is not blocked by a port left open in this tab.
+  useEffect(() => () => {
+    isReadingRef.current = false;
+    const reader = readerRef.current;
+    const port = portRef.current;
+    const task = readTaskRef.current;
+    portRef.current = null;
+    void (async () => {
+      try {
+        if (reader) { await reader.cancel(); await task; }
+        if (port) await port.close();
+      } catch (error) {
+        console.warn("Serial cleanup error:", error);
+      }
+    })();
   }, []);
 
   const sendCommand = useCallback(async (command: string) => {
