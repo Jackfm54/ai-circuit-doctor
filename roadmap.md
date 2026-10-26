@@ -1,5 +1,7 @@
 # Tasks
 
+- [ ] Align Nano firmware, hardware guide and serial capture for real DC voltage tests; remove pseudo-continuity and universal fault thresholds. Physical board wiring awaits identified ground, test points and multimeter readings.
+
 - [x] Strengthen defective/burned solder inspection. Deployed; 16 validation tests pass; fresh real-photo upload returned HTTP 200 and solder assessment with macro-photo limitations. This AI-fallback check did not use YOLO and does not validate accuracy on known defective joints.
 - [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original.
 

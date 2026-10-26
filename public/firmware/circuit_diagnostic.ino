@@ -1,73 +1,87 @@
-/*
- * Circuit Diagnostic - Firmware pour Arduino Nano / ESP32
- * Envoie des mesures REELLES au programme via le port serie USB.
+/* CircuitDiag — Arduino Nano classique ATmega328P, 5 V / 16 MHz.
+ * PAS compatible ESP32, Nano ESP32 ou UNO Q.
+ * Mesure uniquement la tension continue. Aucune mesure de resistance,
+ * de continuite ni detection automatique de composant defectueux.
  *
- * Protocole (115200 bauds, une ligne CSV par mesure):
- *   TYPE,CANAL,VALEUR,UNITE,STATUT
- *   Exemple: VOLTAGE,1,3.32,V,ok
+ * Premiere verification: 2 piles AA, negatif -> GND,
+ * positif -> resistance 1 kohm -> A0. USB alimente la Nano.
+ * La resistance 1 kohm NE protege PAS contre une surtension.
+ * Jamais de secteur, tension negative ou tension > 5 V / > VREF.
+ * Ne pas connecter une carte inconnue. Ne pas alimenter la carte par la Nano.
+ * D2-D5 restent inutilises; aucun INPUT_PULLUP sur la carte testee.
  *
- * Commandes recues du programme:
- *   SCAN  -> demarre l'envoi continu des mesures
- *   STOP  -> arrete l'envoi
- *
- * Cablage (Arduino Nano):
- *   A0..A5 -> points de test de la carte (via pointes de mesure)
- *   GND    -> masse de la carte testee (OBLIGATOIRE, reference commune)
- *
- * ATTENTION: ne jamais depasser 5V sur une entree du Nano (3.3V sur ESP32).
- * Ne mesurez que des circuits basse tension. Jamais le secteur 120V.
+ * 115200 bauds, commandes SCAN / STOP terminees par nouvelle ligne.
+ * CSV: VOLTAGE,1,3.000,V,ok
+ * "ok" = lecture transmise, PAS composant sain.
+ * Une lecture proche de VREF peut etre saturee: verifier au multimetre.
  */
 
-const int CHANNELS[] = {A0, A1, A2, A3, A4, A5};
-const int NUM_CHANNELS = 6;
-const float VREF = 5.0;          // 3.3 pour ESP32
-const int ADC_MAX = 1023;        // 4095 pour ESP32
+const uint8_t CHANNELS[] = {A0, A1, A2, A3, A4, A5, A6, A7};
+// Activer uniquement les entrees physiquement connectees.
+// Par defaut: CH1 / A0 seulement. Ne pas lire les entrees flottantes.
+const bool CHANNEL_ENABLED[] = {true, false, false, false, false, false, false, false};
+const uint8_t NUM_CHANNELS = 8;
+// Remplacer par la tension mesuree entre 5V et GND de la Nano alimentee en USB.
+const float VREF = 5.000;
+const uint16_t ADC_MAX = 1023;
+const uint8_t SAMPLE_COUNT = 16;
+const unsigned long SCAN_INTERVAL_MS = 500;
 
 bool scanning = false;
-String inputBuffer = "";
+char commandBuffer[16];
+uint8_t commandLength = 0;
+bool commandOverflow = false;
+unsigned long lastScan = 0;
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) { ; }
-  Serial.println("READY,CircuitDiagnostic,1.0");
+  analogReference(DEFAULT);
+  Serial.println("READY,CircuitDiag,Nano-DC-2.0");
+}
+
+void readCommands() {
+  while (Serial.available() > 0) {
+    const char c = (char)Serial.read();
+    if (c == '\n' || c == '\r') {
+      commandBuffer[commandLength] = '\0';
+      if (!commandOverflow && strcmp(commandBuffer, "SCAN") == 0) {
+        scanning = true;
+        lastScan = millis() - SCAN_INTERVAL_MS;
+      } else if (!commandOverflow && strcmp(commandBuffer, "STOP") == 0) {
+        scanning = false;
+      }
+      commandLength = 0;
+      commandOverflow = false;
+    } else if (commandLength < sizeof(commandBuffer) - 1) {
+      commandBuffer[commandLength++] = c;
+    } else {
+      commandOverflow = true;
+    }
+  }
+}
+
+void scanChannels() {
+  for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+    if (!CHANNEL_ENABLED[i]) continue;
+    analogRead(CHANNELS[i]); // Lecture ignoree apres changement de canal.
+    unsigned long sum = 0;
+    for (uint8_t s = 0; s < SAMPLE_COUNT; s++) {
+      sum += analogRead(CHANNELS[i]);
+      delayMicroseconds(200);
+    }
+    const float voltage = (sum / (float)SAMPLE_COUNT) * VREF / ADC_MAX;
+    Serial.print("VOLTAGE,");
+    Serial.print(i + 1);
+    Serial.print(',');
+    Serial.print(voltage, 3);
+    Serial.println(",V,ok");
+  }
 }
 
 void loop() {
-  // Lire les commandes du programme
-  while (Serial.available() > 0) {
-    char c = (char)Serial.read();
-    if (c == '\n' || c == '\r') {
-      inputBuffer.trim();
-      if (inputBuffer == "SCAN") scanning = true;
-      else if (inputBuffer == "STOP") scanning = false;
-      inputBuffer = "";
-    } else {
-      inputBuffer += c;
-    }
-  }
-
-  if (scanning) {
-    for (int i = 0; i < NUM_CHANNELS; i++) {
-      // Moyenne de 16 lectures pour reduire le bruit
-      long sum = 0;
-      for (int s = 0; s < 16; s++) {
-        sum += analogRead(CHANNELS[i]);
-        delayMicroseconds(200);
-      }
-      float voltage = (sum / 16.0) * VREF / ADC_MAX;
-
-      // Statut selon plages typiques d'alimentation
-      const char* status = "ok";
-      if (voltage > VREF * 0.98) status = "error";        // proche du rail = possible court-circuit
-      else if (voltage < 0.05) status = "warning";        // pas de tension = ligne morte ou point flottant
-
-      Serial.print("VOLTAGE,");
-      Serial.print(i + 1);
-      Serial.print(",");
-      Serial.print(voltage, 2);
-      Serial.print(",V,");
-      Serial.println(status);
-    }
-    delay(500); // 2 balayages par seconde
+  readCommands();
+  if (scanning && millis() - lastScan >= SCAN_INTERVAL_MS) {
+    lastScan = millis();
+    scanChannels();
   }
 }
