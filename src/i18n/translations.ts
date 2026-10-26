@@ -81,6 +81,14 @@ export const translations = {
       measurementsReady: "mesures de matériel prêtes à combiner avec l'analyse visuelle",
       noMeasurements: "Sans mesures",
       noMeasurementsDesc: "Effectuez d'abord un scan matériel pour obtenir des mesures.",
+      addPhotoButton: "Ajouter la photo de la carte (recommandé)",
+      measurementsOnlyButton: "Analyser uniquement les mesures",
+      nextStepPhoto: "Étape suivante : ajoutez la photo de la carte. Vos mesures seront envoyées avec elle automatiquement.",
+      usedInReport: "Mesures physiques utilisées dans ce rapport",
+      channel: "Canal",
+      lastValue: "Dernière lecture",
+      readings: "lectures",
+      noPhotoMeasurements: "Aucune mesure physique n'a été incluse dans ce rapport.",
     },
     // Image Uploader
     imageUploader: {
@@ -300,6 +308,14 @@ export const translations = {
       measurementsReady: "hardware measurements ready to combine with visual analysis",
       noMeasurements: "No measurements",
       noMeasurementsDesc: "Perform a hardware scan first to get measurements.",
+      addPhotoButton: "Add the board photo (recommended)",
+      measurementsOnlyButton: "Analyze measurements only",
+      nextStepPhoto: "Next step: add the board photo. Your readings will be sent with it automatically.",
+      usedInReport: "Physical measurements used in this report",
+      channel: "Channel",
+      lastValue: "Last reading",
+      readings: "readings",
+      noPhotoMeasurements: "No physical measurements were included in this report.",
     },
     // Image Uploader
     imageUploader: {
