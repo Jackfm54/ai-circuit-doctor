@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aiResponseError } from "./aiResponse";
+import { aiResponseError } from "../src/lib/aiResponse";
 
 test("402 is returned as a recoverable credit error rather than thrown", async () => {
   const result = await aiResponseError(new Response('{"error":"Not enough credits"}', { status: 402 }), "en", "Unavailable");
