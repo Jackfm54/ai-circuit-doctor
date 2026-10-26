@@ -44,6 +44,19 @@ describe("Real image diagnostic validation", () => {
     expect(diagnostic.components[0].status).toBe("warning");
     expect(diagnostic.components[0].boundingBox).toBeUndefined();
   });
+  test("retains burned solder findings but rejects AI-generated solder localization", () => {
+    const diagnostic = normalizeDiagnostic({
+      summary: "Visible joint heat damage", overallStatus: "warning", recommendations: [],
+      components: [{ name: "Burned connector joint", type: "solder_joint", status: "error", details: "Charred pad; electrical contact untested", location: "Top connector", boundingBox: { x: .2, y: .3, width: .1, height: .1 } }],
+    }, true, "en");
+    expect(diagnostic.components[0].type).toBe("solder_joint");
+    expect(diagnostic.components[0].status).toBe("error");
+    expect(diagnostic.components[0].boundingBox).toBeUndefined();
+  });
+  test("measurement-only diagnostics cannot report visually assessed solder quality", () => {
+    const diagnostic = normalizeDiagnostic({ summary: "Voltage only", overallStatus: "warning", recommendations: [], components: [], solderAnalysis: { overallQuality: "good", bridges: 0 } }, false, "fr");
+    expect(diagnostic.solderAnalysis).toBeUndefined();
+  });
   test("keeps trained-model detections with exact boxes and confidence", () => {
     const detections = normalizeDetections([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);
     expect(detections).toEqual([{ label: "IC", confidence: 0.92, bbox: { x: 0.117, y: 0.279, width: 0.08, height: 0.09 } }]);

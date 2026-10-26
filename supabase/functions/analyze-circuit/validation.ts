@@ -54,12 +54,14 @@ export function normalizeDiagnostic(value: unknown, hasImage: boolean, language:
   if (typeof d.summary !== "string" || !statuses.includes(d.overallStatus) || !Array.isArray(d.components) || !Array.isArray(d.recommendations) || !d.recommendations.every((v: unknown) => typeof v === "string")) throw new Error("Invalid diagnostic response.");
   d.components = d.components.map((c: Record<string, any>) => {
     if (!c || typeof c.name !== "string" || typeof c.details !== "string" || !statuses.includes(c.status)) throw new Error("Invalid component response.");
-    const boundingBox = hasImage ? normalizeBox(c.boundingBox) : undefined;
+    // The trained detector localizes components, not individual solder defects.
+    const boundingBox = hasImage && c.type !== "solder_joint" ? normalizeBox(c.boundingBox) : undefined;
     // A generated confidence number is not a calibrated detector probability.
     const { confidence, ...rest } = c;
     return { ...rest, boundingBox };
   });
   d.detectionMethod = detectionMethodLabel ?? (language === "en" ? "AI visual inspection — provisional diagnosis" : "Inspection visuelle IA — diagnostic provisoire");
+  if (!hasImage) delete d.solderAnalysis;
   if (hasImage) d.summary += language === "en"
     ? " This is a provisional visual assessment, not confirmation of electrical operation; confirm suspected faults with appropriate measurements."
     : " Il s'agit d'une évaluation visuelle provisoire, pas d'une confirmation du fonctionnement électrique ; confirmez les défauts suspectés par des mesures adaptées.";
