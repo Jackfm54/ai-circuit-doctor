@@ -1,9 +1,9 @@
 # Tasks
 
-- [ ] Align Nano firmware, hardware guide and serial capture for real DC voltage tests; remove pseudo-continuity and universal fault thresholds. Physical board wiring awaits identified ground, test points and multimeter readings.
+- [x] Align Nano DC firmware and French/English guide with one shared downloadable code, only A0 enabled initially, no pseudo-continuity or universal fault thresholds; validate serial CSV and scan-command success. Seven tests pass; guide/download verified in browser. Firmware upload and physical measurements are not verified without the user's Nano.
 
 - [x] Strengthen defective/burned solder inspection. Deployed; 16 validation tests pass; fresh real-photo upload returned HTTP 200 and solder assessment with macro-photo limitations. This AI-fallback check did not use YOLO and does not validate accuracy on known defective joints.
-- [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original.
+- [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original. Deferred from the previous request while the user prioritizes physical Nano testing.
 
 - [x] Strengthen real-photo inspection of visible traces, component bodies and resistors. Deployed and checked through a fresh photo upload (HTTP 200, 11 components, trace assessment and macro-photo limitations); 14 validation tests pass. This check used AI fallback, not YOLO, and does not establish defect-detection accuracy or electrical functionality.
 
@@ -14,7 +14,8 @@
 - [x] Repair and verify real photo analysis and input validation without simulated diagnoses; keep localization uncertainty visible because live photo testing revealed localization errors.
 - [x] Review the existing physical measurement support and identify safety limitations.
 - [x] Recommend an initial shopping kit for Canada for computer and phone boards, for a user with no equipment.
-- [ ] Specify final wiring and compatible measurement firmware. Blocked: the exact board and safe test points must be identified; direct Arduino connections are not suitable for unknown computer or phone rails.- [x] Detect micro SMD components (tiled YOLO + keep every detection)
+- [ ] Specify final board wiring and verify physical Nano readings. Blocked: exact board, ground, safe test points and multimeter readings must be identified; unknown computer/phone rails cannot be connected directly. Nano-only DC firmware is ready for the two-AA check, not hardware-verified.
+- [x] Detect micro SMD components (tiled YOLO + keep every detection)
 - [x] Professional redesign: hero, how-it-works, report header, PDF export, demo mode
 - [x] Professional block schematic generated from the analyzed board (SVG download, demo copy)
 - [x] Component-level schematic (symbols + net labels) from the board
