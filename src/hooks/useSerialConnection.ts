@@ -1,14 +1,10 @@
 /// <reference types="w3c-web-serial" />
 import { useState, useCallback, useRef } from "react";
 
-export interface MeasurementData {
-  type: "voltage" | "continuity" | "resistance" | "signal";
-  channel: number;
-  value: number;
-  unit: string;
-  timestamp: number;
-  status: "ok" | "warning" | "error";
-}
+import { parseMeasurement } from "@/lib/serialMeasurement";
+import type { MeasurementData } from "@/lib/serialMeasurement";
+export type { MeasurementData } from "@/lib/serialMeasurement";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export interface SerialConnectionState {
   isConnected: boolean;
@@ -19,6 +15,8 @@ export interface SerialConnectionState {
 }
 
 export function useSerialConnection() {
+  const { language } = useLanguage();
+  const msg = (fr: string, en: string) => language === "fr" ? fr : en;
   const [state, setState] = useState<SerialConnectionState>({
     isConnected: false,
     isSupported: typeof navigator !== "undefined" && "serial" in navigator,
@@ -30,38 +28,7 @@ export function useSerialConnection() {
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const isReadingRef = useRef(false);
-
-  const parseMeasurement = useCallback((line: string): MeasurementData | null => {
-    try {
-      // Expected format from Arduino: TYPE,CHANNEL,VALUE,UNIT,STATUS
-      // Example: VOLTAGE,1,3.32,V,ok
-      // Example: CONTINUITY,2,1,CONN,ok
-      // Example: RESISTANCE,3,4700,OHM,ok
-      const parts = line.trim().split(",");
-      if (parts.length < 5) return null;
-
-      const typeMap: Record<string, MeasurementData["type"]> = {
-        VOLTAGE: "voltage",
-        CONTINUITY: "continuity",
-        RESISTANCE: "resistance",
-        SIGNAL: "signal",
-      };
-
-      const type = typeMap[parts[0].toUpperCase()];
-      if (!type) return null;
-
-      return {
-        type,
-        channel: parseInt(parts[1], 10),
-        value: parseFloat(parts[2]),
-        unit: parts[3],
-        timestamp: Date.now(),
-        status: parts[4].toLowerCase() as "ok" | "warning" | "error",
-      };
-    } catch {
-      return null;
-    }
-  }, []);
+  const readTaskRef = useRef<Promise<void> | null>(null);
 
   const readLoop = useCallback(async () => {
     if (!portRef.current?.readable) return;
@@ -96,20 +63,22 @@ export function useSerialConnection() {
         console.error("Serial read error:", error);
         setState((prev) => ({
           ...prev,
-          lastError: "Error leyendo datos del puerto serial",
+          isConnected: false,
+          lastError: msg("Lecture USB interrompue. Déconnectez puis reconnectez la Nano.", "USB reading interrupted. Disconnect and reconnect the Nano."),
         }));
       }
     } finally {
+      isReadingRef.current = false;
       readerRef.current?.releaseLock();
       readerRef.current = null;
     }
-  }, [parseMeasurement]);
+  }, [language]);
 
   const connect = useCallback(async () => {
     if (!state.isSupported) {
       setState((prev) => ({
         ...prev,
-        lastError: "Web Serial API no está soportado en este navegador",
+        lastError: msg("Utilisez Chrome ou Edge sur ordinateur pour la connexion USB.", "Use desktop Chrome or Edge for USB connection."),
       }));
       return false;
     }
@@ -138,7 +107,9 @@ export function useSerialConnection() {
         measurements: [],
       }));
 
-      readLoop();
+      // Nano resets when USB opens; wait for its bootloader before SCAN.
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      readTaskRef.current = readLoop();
       return true;
     } catch (error) {
       console.error("Serial connection error:", error);
@@ -147,11 +118,11 @@ export function useSerialConnection() {
         lastError:
           error instanceof Error
             ? error.message
-            : "No se pudo conectar al dispositivo",
+            : msg("Impossible de connecter la Nano.", "Unable to connect the Nano."),
       }));
       return false;
     }
-  }, [state.isSupported, readLoop]);
+  }, [state.isSupported, readLoop, language]);
 
   const disconnect = useCallback(async () => {
     isReadingRef.current = false;
@@ -159,8 +130,8 @@ export function useSerialConnection() {
     try {
       if (readerRef.current) {
         await readerRef.current.cancel();
-        readerRef.current.releaseLock();
-        readerRef.current = null;
+        await readTaskRef.current;
+        readTaskRef.current = null;
       }
 
       if (portRef.current) {
@@ -182,26 +153,28 @@ export function useSerialConnection() {
     if (!portRef.current?.writable) {
       setState((prev) => ({
         ...prev,
-        lastError: "Puerto no disponible para escritura",
+        lastError: msg("Port USB indisponible.", "USB port unavailable."),
       }));
       return false;
     }
 
+    let writer: WritableStreamDefaultWriter<Uint8Array> | undefined;
     try {
-      const writer = portRef.current.writable.getWriter();
+      writer = portRef.current.writable.getWriter();
       const encoder = new TextEncoder();
       await writer.write(encoder.encode(command + "\n"));
-      writer.releaseLock();
       return true;
     } catch (error) {
       console.error("Send command error:", error);
       setState((prev) => ({
         ...prev,
-        lastError: "Error enviando comando al dispositivo",
+        lastError: msg("Impossible d’envoyer la commande à la Nano.", "Unable to send the command to the Nano."),
       }));
       return false;
+    } finally {
+      writer?.releaseLock();
     }
-  }, []);
+  }, [language]);
 
   const clearMeasurements = useCallback(() => {
     setState((prev) => ({ ...prev, measurements: [] }));
