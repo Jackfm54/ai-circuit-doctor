@@ -18,6 +18,7 @@ import { ExpertChat } from "@/components/ExpertChat";
 import { detectComponents } from "@/lib/yoloDetector";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { aiResponseError } from "@/lib/aiResponse";
 
 function newReportMeta() {
   const date = new Date();
@@ -70,9 +71,10 @@ export default function Index() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || t.toasts.analysisErrorDesc);
+      const serviceError = await aiResponseError(response, language, t.toasts.analysisErrorDesc);
+      if (serviceError) {
+        toast({ title: t.toasts.analysisError, description: serviceError, variant: "destructive" });
+        return;
       }
 
       const result = await response.json();
@@ -126,9 +128,10 @@ export default function Index() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || t.toasts.analysisErrorDesc);
+      const serviceError = await aiResponseError(response, language, t.toasts.analysisErrorDesc);
+      if (serviceError) {
+        toast({ title: t.toasts.analysisError, description: serviceError, variant: "destructive" });
+        return;
       }
 
       const result = await response.json();

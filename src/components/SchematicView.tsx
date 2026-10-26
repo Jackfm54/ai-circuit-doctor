@@ -5,6 +5,7 @@ import { Workflow, Download, Loader2, AlertTriangle } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { ComponentStatus } from "./DiagnosticResult";
 import { NetlistSchematic, type Netlist } from "./NetlistSchematic";
+import { aiResponseError } from "@/lib/aiResponse";
 
 export type BlockKind = "power" | "protection" | "processor" | "memory" | "communication" | "interface" | "clock" | "passive" | "other";
 export interface Schematic {
@@ -77,8 +78,12 @@ export function SchematicView({ components, summary, imageUrl, reportId, initial
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ image: img?.data, imageMimeType: img?.mime, components, summary, language, mode }),
       });
+      const serviceError = await aiResponseError(res, language, t.schematic.error);
+      if (serviceError) {
+        setError(serviceError);
+        return;
+      }
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error || t.schematic.error);
       if (mode === "detailed") setNetlist(body); else setSchematic(body);
     } catch (e) {
       setError(e instanceof Error ? e.message : t.schematic.error);
