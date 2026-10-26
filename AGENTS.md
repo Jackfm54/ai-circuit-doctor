@@ -5,6 +5,7 @@
 - Independent local exports are assembled outside the live project, with API keys confined to the local API process and all detector resources packaged locally, so the backup and preview remain unchanged.
 
 - Keep photo validation and diagnostic normalization in the analyze-circuit function's pure validation module so the same rules can be tested without calling AI.
+- Solder findings use existing report entries without generated joint boxes, and measurement-only results omit visual solder assessments, because the component detector and voltage inputs cannot establish joint localization or quality.
 - Preserve uploaded image MIME types in diagnostic requests so the model sees the correct image encoding.
 - Preserve the language context identity across Vite hot updates so mounted providers and refreshed consumers do not become disconnected.
 - Position component overlays as percentages of the rendered image and use diagnostic component indices for labels, so resizing and sparse localization keep labels aligned with their reports.

@@ -1,6 +1,6 @@
 # Tasks
 
-- [ ] Strengthen defective/burned solder inspection and verify real-photo diagnostics without claiming electrical confirmation.
+- [x] Strengthen defective/burned solder inspection. Deployed; 16 validation tests pass; fresh real-photo upload returned HTTP 200 and solder assessment with macro-photo limitations. This AI-fallback check did not use YOLO and does not validate accuracy on known defective joints.
 - [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original.
 
 - [x] Strengthen real-photo inspection of visible traces, component bodies and resistors. Deployed and checked through a fresh photo upload (HTTP 200, 11 components, trace assessment and macro-photo limitations); 14 validation tests pass. This check used AI fallback, not YOLO, and does not establish defect-detection accuracy or electrical functionality.
