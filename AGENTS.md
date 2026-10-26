@@ -1,4 +1,7 @@
  # Project rules
+
+- Keep the classic Nano DC firmware as the single source for guide code and downloads; enable only wired analog channels and treat CSV ok as receipt, not electrical health. Physical board test points must be validated with a multimeter before wiring.
+- Parse serial CSV through the pure serialMeasurement module so invalid numeric data cannot reach diagnostics; finish the read task before releasing the USB port.
  
 - Handle expected AI HTTP failures through the shared aiResponseError helper as recoverable UI states, so exhausted credits never become runtime errors.
 
