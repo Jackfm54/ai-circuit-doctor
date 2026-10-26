@@ -1,4 +1,6 @@
  # Project rules
+ 
+- Handle expected AI HTTP failures through the shared aiResponseError helper as recoverable UI states, so exhausted credits never become runtime errors.
 
 - Independent local exports are assembled outside the live project, with API keys confined to the local API process and all detector resources packaged locally, so the backup and preview remain unchanged.
 

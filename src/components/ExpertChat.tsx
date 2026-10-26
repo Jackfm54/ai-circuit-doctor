@@ -7,6 +7,7 @@ import { Send, Bot, User, Loader2, Sparkles, ImagePlus, X, CircuitBoard, Downloa
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ReactMarkdown from "react-markdown";
+import { aiResponseError } from "@/lib/aiResponse";
 
 interface Message {
   role: "user" | "assistant";
@@ -82,9 +83,11 @@ export function ExpertChat() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || t.expertChat.errorMessage);
+      const serviceError = await aiResponseError(response, language, t.expertChat.errorMessage);
+      if (serviceError) {
+        toast({ title: t.expertChat.error, description: serviceError, variant: "destructive" });
+        setSelectedImage(imageToAnalyze);
+        return;
       }
 
       const data = await response.json();
@@ -148,9 +151,13 @@ export function ExpertChat() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || t.expertChat.errorMessage);
+      const serviceError = await aiResponseError(response, language, t.expertChat.errorMessage);
+      if (serviceError) {
+        toast({ title: t.expertChat.error, description: serviceError, variant: "destructive" });
+        setInput(userMessage.content);
+        setSelectedImage(userMessage.image ?? null);
+        setMessages((prev) => prev.filter((message) => message !== userMessage));
+        return;
       }
 
       const reader = response.body?.getReader();
