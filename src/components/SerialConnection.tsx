@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Usb, Wifi, WifiOff, Zap, Activity, Radio, AlertCircle, Play, Square, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,8 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
   } = useSerialConnection();
 
   const [isScanning, setIsScanning] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  useEffect(() => { if (!isConnected) setIsScanning(false); }, [isConnected]);
 
   const measurementLabels: Record<MeasurementData["type"], string> = {
     voltage: language === "fr" ? "Tension" : "Voltage",
@@ -45,17 +47,19 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
   };
 
   const handleConnect = async () => {
-    await connect();
+    setIsConnecting(true);
+    try { await connect(); } finally { setIsConnecting(false); }
   };
 
   const handleStartScan = async () => {
-    setIsScanning(true);
-    await startScan();
+    clearMeasurements();
+    onMeasurementsReady?.([]);
+    if (await startScan()) setIsScanning(true);
   };
 
   const handleStopScan = async () => {
+    if (!await stopScan()) return;
     setIsScanning(false);
-    await stopScan();
     if (onMeasurementsReady && measurements.length > 0) {
       onMeasurementsReady(measurements);
     }
@@ -128,6 +132,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <p className="text-sm text-warning">{language === "fr" ? "Nano : tensions DC uniquement. « Reçue » ne signifie pas composant sain. Vérifiez chaque point au multimètre avant branchement ; jamais de secteur ni plus de 5 V / VREF." : "Nano: DC voltages only. Received does not mean healthy. Check every point with a multimeter before connecting; never mains or more than 5 V / VREF."}</p>
         {lastError && (
           <Alert variant="destructive" className="border-destructive/30">
             <AlertCircle className="h-4 w-4" />
@@ -140,9 +145,9 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
             <p className="text-sm text-muted-foreground">
               {t.serial.description}
             </p>
-            <Button onClick={handleConnect} variant="techGlow" className="w-full">
+            <Button onClick={handleConnect} disabled={isConnecting} variant="techGlow" className="w-full">
               <Usb className="w-4 h-4 mr-2" />
-              {t.serial.connect}
+              {isConnecting ? (language === "fr" ? "Connexion…" : "Connecting…") : t.serial.connect}
             </Button>
           </div>
         ) : (
@@ -154,7 +159,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
 
             <div className="flex gap-2">
               {!isScanning ? (
-                <Button onClick={handleStartScan} variant="success" className="flex-1">
+                <Button onClick={handleStartScan} disabled={isConnecting} variant="success" className="flex-1">
                   <Play className="w-4 h-4 mr-2" />
                   {t.serial.startScan}
                 </Button>
@@ -164,7 +169,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
                   {t.serial.stopScan}
                 </Button>
               )}
-              <Button onClick={disconnect} variant="techOutline" size="icon">
+              <Button onClick={async () => { await disconnect(); setIsScanning(false); }} disabled={isConnecting} variant="techOutline" size="icon" title={t.serial.disconnected} aria-label={language === "fr" ? "Déconnecter" : "Disconnect"}>
                 <WifiOff className="w-4 h-4" />
               </Button>
             </div>
@@ -177,7 +182,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
                     {language === "fr" ? "Mesures en Direct" : "Live Measurements"}
                   </h4>
                   <Button
-                    onClick={clearMeasurements}
+                    onClick={() => { clearMeasurements(); onMeasurementsReady?.([]); }}
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs"
@@ -219,7 +224,7 @@ export function SerialConnection({ onMeasurementsReady }: SerialConnectionProps)
                                 m.status === "error" && "border-destructive/30 text-destructive"
                               )}
                             >
-                              {m.status.toUpperCase()}
+                              {m.status === "ok" ? (language === "fr" ? "REÇUE" : "RECEIVED") : m.status.toUpperCase()}
                             </Badge>
                           </div>
                         </div>

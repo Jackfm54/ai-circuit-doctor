@@ -156,6 +156,7 @@ export default function Index() {
 
   const handleMeasurementsReady = (measurements: MeasurementData[]) => {
     setHardwareMeasurements(measurements);
+    if (measurements.length === 0) return;
     toast({
       title: t.toasts.measurementsCaptured,
       description: `${measurements.length} ${t.toasts.measurementsCapturedDesc}`,
