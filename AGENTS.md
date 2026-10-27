@@ -5,7 +5,7 @@
  
 - Handle expected AI HTTP failures through the shared aiResponseError helper as recoverable UI states, so exhausted credits never become runtime errors.
 
-- Independent local exports are assembled outside the live project, with API keys confined to the local API process and all detector resources packaged locally, so the backup and preview remain unchanged.
+- Independent exports are assembled outside the live project, with private API keys confined to server environments and detector resources packaged locally; external auth and persistence setup ships with the export rather than modifying the original application's backend.
 
 - Keep photo validation and diagnostic normalization in the analyze-circuit function's pure validation module so the same rules can be tested without calling AI.
 - Solder findings use existing report entries without generated joint boxes, and measurement-only results omit visual solder assessments, because the component detector and voltage inputs cannot establish joint localization or quality.

@@ -1,9 +1,11 @@
 # Tasks
 
+- [x] Deliver CircuitDiagIA independent Vercel source ZIP with OpenAI, external Supabase login, professional profiles, private diagnostic records and setup SQL; preserve original application. Copy compiles, types and 31 tests pass; SQL privacy/quota tested in isolated PostgreSQL. Login screen and packaged resources checked. External account configuration, OpenAI and real hosted save/read remain unverified until the user configures their services.
+
 - [x] Align Nano DC firmware and French/English guide with one shared downloadable code, only A0 enabled initially, no pseudo-continuity or universal fault thresholds; validate serial CSV and scan-command success. Seven tests pass; guide/download verified in browser. Firmware upload and physical measurements are not verified without the user's Nano.
 
 - [x] Strengthen defective/burned solder inspection. Deployed; 16 validation tests pass; fresh real-photo upload returned HTTP 200 and solder assessment with macro-photo limitations. This AI-fallback check did not use YOLO and does not validate accuracy on known defective joints.
-- [ ] Deliver the independent local CircuitDiag source archive with OpenAI, packaged YOLO resources and no platform branding or signup; preserve original. Deferred from the previous request while the user prioritizes physical Nano testing.
+- [x] Independent archive request superseded by CircuitDiagIA export with user login and professional profiles, per the user's updated requirements.
 
 - [x] Strengthen real-photo inspection of visible traces, component bodies and resistors. Deployed and checked through a fresh photo upload (HTTP 200, 11 components, trace assessment and macro-photo limitations); 14 validation tests pass. This check used AI fallback, not YOLO, and does not establish defect-detection accuracy or electrical functionality.
 
