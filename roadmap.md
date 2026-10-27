@@ -1,5 +1,7 @@
 # Tasks
 
+- [ ] Deliver CircuitDiagIA independent Vercel source ZIP with OpenAI, external Supabase login, professional profiles, private diagnostic records and setup SQL; preserve original application. Live verification depends on the user's external service configuration.
+
 - [x] Align Nano DC firmware and French/English guide with one shared downloadable code, only A0 enabled initially, no pseudo-continuity or universal fault thresholds; validate serial CSV and scan-command success. Seven tests pass; guide/download verified in browser. Firmware upload and physical measurements are not verified without the user's Nano.
 
 - [x] Strengthen defective/burned solder inspection. Deployed; 16 validation tests pass; fresh real-photo upload returned HTTP 200 and solder assessment with macro-photo limitations. This AI-fallback check did not use YOLO and does not validate accuracy on known defective joints.
