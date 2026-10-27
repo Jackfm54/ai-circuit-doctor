@@ -1,24 +1,14 @@
-/* CircuitDiag — lecture de tension continue sur cartes Arduino ATMEL 5 V.
- *
- * Le code s'adapte a la carte selectionnee dans Arduino IDE :
- *   Arduino Nano classique ATmega328P ......... A0-A7    CH1-CH8
- *   Arduino Uno / Duemilanove / Pro Mini 328P . A0-A5    CH1-CH6
- *   Arduino Mega ATmega2560 ................... A0-A15   CH1-CH16
- *
- * Les autres cartes sont refusees a la compilation (message "Carte nonprise en
- * charge") : ESP32, ESP32 DevKit V1, Nano ESP32, Due, Zero, MKR, UNO Q
- * (Qualcomm), cartes RP2040. Elles fonctionnent en 3,3 V, avec un convertisseur
- * et un brochage differents : ne pas les forcer.
- *
+/* CircuitDiag — Arduino Nano classique ATmega328P, 5 V / 16 MHz.
+ * PAS compatible ESP32, Nano ESP32 ou UNO Q.
  * Mesure uniquement la tension continue. Aucune mesure de resistance,
  * de continuite ni detection automatique de composant defectueux.
  *
  * Premiere verification: 2 piles AA, negatif -> GND,
- * positif -> resistance 1 kohm -> A0 (CH1). USB alimente la carte.
+ * positif -> resistance 1 kohm -> A0. USB alimente la Nano.
  * La resistance 1 kohm NE protege PAS contre une surtension.
  * Jamais de secteur, tension negative ou tension > 5 V / > VREF.
- *
- * Ne pas connecter une carte inconnue. Ne pas alimenter la carte par l'Arduino.
+ * Ne pas connecter une carte inconnue. Ne pas alimenter la carte par la Nano.
+ * D2-D5 restent inutilises; aucun INPUT_PULLUP sur la carte testee.
  *
  * 115200 bauds, commandes SCAN / STOP terminees par nouvelle ligne.
  * CSV: VOLTAGE,1,3.000,V,ok
@@ -26,34 +16,12 @@
  * Une lecture proche de VREF peut etre saturee: verifier au multimetre.
  */
 
-// --- Cartes refusees : tension de 3,3 V et convertisseur differents ---------
-#if defined(ESP32) || defined(ARDUINO_ARCH_SAM) || defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_MBED)
-#error "Carte nonprise en charge (ESP32, Due, Zero, MKR, Nano ESP32, UNO Q). Utiliser une carte ATMEL 5V: Nano, Uno ou Mega."
-#endif
-
-// --- Entrees et canaux selon la carte choisie dans Arduino IDE --------------
-#if defined(ARDUINO_AVR_NANO)
-  #define CD_BOARD "Nano328"
-  const uint8_t CHANNELS[] = {A0, A1, A2, A3, A4, A5, A6, A7};
-  // Activer uniquement les entrees physiquement connectees.
-  // Par defaut: CH1 / A0 seulement. Ne pas lire les entrees flottantes.
-  const bool CHANNEL_ENABLED[] = {true, false, false, false, false, false, false, false};
-#elif defined(__AVR_ATmega328P__)
-  // Uno, Duemilanove, Pro Mini et autres cartes ATmega328P : pas de A6/A7.
-  #define CD_BOARD "Uno328"
-  const uint8_t CHANNELS[] = {A0, A1, A2, A3, A4, A5};
-  const bool CHANNEL_ENABLED[] = {true, false, false, false, false, false};
-#elif defined(__AVR_ATmega2560__)
-  #define CD_BOARD "Mega2560"
-  const uint8_t CHANNELS[] = {A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15};
-  const bool CHANNEL_ENABLED[] = {true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
-#else
-  #error "Carte nonprise en charge : choisir Arduino Nano, Uno ou Mega (ATmega328P / ATmega2560)."
-#endif
-
-const uint8_t NUM_CHANNELS = sizeof(CHANNELS) / sizeof(CHANNELS[0]);
-
-// Remplacer par la tension mesuree entre 5V et GND de la carte alimentee en USB.
+const uint8_t CHANNELS[] = {A0, A1, A2, A3, A4, A5, A6, A7};
+// Activer uniquement les entrees physiquement connectees.
+// Par defaut: CH1 / A0 seulement. Ne pas lire les entrees flottantes.
+const bool CHANNEL_ENABLED[] = {true, false, false, false, false, false, false, false};
+const uint8_t NUM_CHANNELS = 8;
+// Remplacer par la tension mesuree entre 5V et GND de la Nano alimentee en USB.
 const float VREF = 5.000;
 const uint16_t ADC_MAX = 1023;
 const uint8_t SAMPLE_COUNT = 16;
@@ -68,8 +36,7 @@ unsigned long lastScan = 0;
 void setup() {
   Serial.begin(115200);
   analogReference(DEFAULT);
-  Serial.print("READY,CircuitDiag,");
-  Serial.println(CD_BOARD);
+  Serial.println("READY,CircuitDiag,Nano-DC-2.0");
 }
 
 void readCommands() {

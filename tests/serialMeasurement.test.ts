@@ -24,14 +24,3 @@ test("Nano transmits voltages without driving digital continuity pins or inventi
   assert.doesNotMatch(executable, /INPUT_PULLUP|CONTINUITY|WARNING_LOW|ERROR_LOW/);
   assert.match(executable, /Serial.println\(",V,ok"\)/);
 });
-test("each supported board keeps its own analog inputs", () => {
-  const executable = firmware.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-  assert.match(executable, /const uint8_t CHANNELS\[\] = \{A0, A1, A2, A3, A4, A5, A6, A7\};/);
-  assert.match(executable, /const uint8_t CHANNELS\[\] = \{A0, A1, A2, A3, A4, A5\};/);
-  assert.match(executable, /A8, A9, A10, A11, A12, A13, A14, A15\};/);
-});
-test("3.3 V boards are refused at compile time instead of being measured", () => {
-  const executable = firmware.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-  assert.match(executable, /#if defined\(ESP32\)[\s\S]*?#error/);
-  assert.match(executable, /#else\s*\n\s*#error/);
-});
