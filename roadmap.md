@@ -1,5 +1,7 @@
 # Tasks
 
+- [ ] Adapt the classroom video to French, preserving the professional futuristic animation and music; save a new version.
+
 - [x] Create a professional, innovative futuristic motion-graphics video presenting CircuitDiag to web-development students. Delivered a verified 20-second 1920×1080 MP4 with music, Spanish titles and real French app screens; no narration. App unchanged.
 
 - [x] Deliver CircuitDiagIA independent Vercel source ZIP with OpenAI, external Supabase login, professional profiles, private diagnostic records and setup SQL; preserve original application. Copy compiles, types and 31 tests pass; SQL privacy/quota tested in isolated PostgreSQL. Login screen and packaged resources checked. External account configuration, OpenAI and real hosted save/read remain unverified until the user configures their services.
