@@ -1,6 +1,6 @@
 # Tasks
 
-- [ ] Adapt the classroom video to French, preserving the professional futuristic animation and music; save a new version.
+- [x] Adapt the classroom video to French; delivered a new 20-second Full HD version with original music and rebuilt matching animation. Frames/audio reviewed; hardware screenshot crops the right end of its warning, as in the original. App and original video unchanged.
 
 - [x] Create a professional, innovative futuristic motion-graphics video presenting CircuitDiag to web-development students. Delivered a verified 20-second 1920×1080 MP4 with music, Spanish titles and real French app screens; no narration. App unchanged.
 
