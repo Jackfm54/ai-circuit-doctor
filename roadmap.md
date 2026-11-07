@@ -1,5 +1,6 @@
 # Tasks
 
+- [x] Create a 16:9 dark-terminal poster displaying the stand QR codes; delivered 3840×2160 PNG + 1920×1080 JPG in Files. Both codes verified to decode to the Vercel app URL in the rendered image; layout QA passed. Note: the two QR codes in the source document are identical, so the poster presents them as two access points to the same app.
 - [x] Adapt the classroom video to French; delivered a new 20-second Full HD version with original music and rebuilt matching animation. Frames/audio reviewed; hardware screenshot crops the right end of its warning, as in the original. App and original video unchanged.
 
 - [x] Create a professional, innovative futuristic motion-graphics video presenting CircuitDiag to web-development students. Delivered a verified 20-second 1920×1080 MP4 with music, Spanish titles and real French app screens; no narration. App unchanged.
